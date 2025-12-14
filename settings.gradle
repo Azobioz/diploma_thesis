@@ -1,0 +1,4 @@
+rootProject.name = 'diplom_work'
+include 'board-service'
+include 'board_service'
+include 'api_gateway_service'
