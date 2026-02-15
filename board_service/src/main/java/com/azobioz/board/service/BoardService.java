@@ -33,8 +33,8 @@ public class BoardService {
         return new GetBoardResponse(board.getName(), boardLength.getX(), boardLength.getY(), board.getBackground());
     }
 
-    public GetBoardResponse getBoardById(Integer id){
-        Board board = boardRepository.findBoardById(Long.valueOf(id));
+    public GetBoardResponse getBoardById(Long id){
+        Board board = boardRepository.findBoardById(id);
         return new GetBoardResponse(board.getName(), boardLength.getX(), boardLength.getY(), board.getBackground());
     }
 
@@ -44,14 +44,14 @@ public class BoardService {
         ).collect(Collectors.toList());
     }
 
-    public String deleteBoardById(Integer id) {
-        Board board = boardRepository.findBoardById(Long.valueOf(id));
+    public String deleteBoardById(Long id) {
+        Board board = boardRepository.findBoardById(id);
         boardRepository.deleteById(id);
         return "Board with name " + board.getName() + " has been deleted";
     }
 
-    public GetBoardResponse editBoard(Integer id, BoardRequest request){
-        Board board = boardRepository.findBoardById(Long.valueOf(id));
+    public GetBoardResponse editBoard(Long id, BoardRequest request){
+        Board board = boardRepository.findBoardById(id);
         if (request.name() != null && !request.name().equals(board.getName()) && !request.name().isBlank()) {
             board.setName(request.name());
         }

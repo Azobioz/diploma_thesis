@@ -1,0 +1,88 @@
+body {
+  background-color: #5c79b6;
+}
+
+/*for main page*/
+.for-lists {
+  margin-left: 400px;
+  margin-top: 500px;
+  width: 1600px;
+  text-decoration: none;
+  color: inherit;
+}
+
+.for-column-board-name {
+  margin-left: 6px;
+}
+
+.for-column-online-people {
+  margin-right: 10px;
+}
+
+.for-column-board-owner {
+  margin-right: 25px;
+}
+
+/*for board page*/
+.board-page {
+  min-height: 100vh;
+  background-image:
+          linear-gradient(to right, rgba(255,255,255,0.2) 1px, transparent 1px),
+          linear-gradient(to bottom, rgba(255,255,255,0.2) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
+.board-page-header-navbar {
+  background-color: #51A6FB;
+  border-radius: 20px;
+  width: 500px;
+  top: 20px;
+  left: 20px;
+}
+
+.board-side-bar {
+  position: relative; /* Важно для абсолютного позиционирования подменю */
+  width: 50px;
+  height: 300px;
+  font-size: 20px;
+  margin-top: 50px;
+  margin-left: 25px;
+
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+
+  background: #51A6FB;
+  border-radius: 15px;
+}
+
+.board-side-bar .btn {
+  width: 40px;
+  height: 40px;
+  font-size: 28px;
+  display: flex;
+  margin-top: 15px;
+  margin-left: 5px;
+  align-items: center;
+  justify-content: center;
+}
+
+.board-side-bar-submenu {
+  position: absolute; /* Главное — абсолютное позиционирование */
+  left: 60px;
+  display: flex;
+  flex-direction: row;
+  gap: 10px;
+  padding: 10px;
+  width: 180px;
+  height: 100px;
+
+  background: #51A6FB;
+  border-radius: 10px;
+  z-index: 100;           /* чтобы было поверх */
+}
+
+.board-element {
+  overflow: hidden;
+  z-index: 1000;
+}

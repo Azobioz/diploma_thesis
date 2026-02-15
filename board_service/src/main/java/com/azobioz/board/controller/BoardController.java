@@ -23,7 +23,7 @@ public class BoardController {
     }
 
     @GetMapping("/{id}")
-    public GetBoardResponse getBoard(@PathVariable("id") Integer id) {
+    public GetBoardResponse getBoard(@PathVariable("id") Long id) {
         return boardService.getBoardById(id);
     }
 
@@ -33,12 +33,12 @@ public class BoardController {
     }
 
     @PutMapping("/{id}/edit")
-    public GetBoardResponse editBoard(@PathVariable("id") Integer id, @RequestBody BoardRequest request) {
+    public GetBoardResponse editBoard(@PathVariable("id") Long id, @RequestBody BoardRequest request) {
         return boardService.editBoard(id, request);
     }
 
     @DeleteMapping("/{id}/delete")
-    public String deleteBoard(@PathVariable("id") Integer id) {
+    public String deleteBoard(@PathVariable("id") Long id) {
         return boardService.deleteBoardById(id);
     }
 

@@ -1,2 +1,26 @@
 server:
   port: 8081
+
+spring:
+  cloud:
+    gateway:
+      routes:
+        - id: board-service
+          uri: http://localhost:8082
+          predicates:
+            - Path=/boards/**
+
+      globalcors:
+        cors-configurations:
+          '[/**]':
+            allowedOrigins:
+              - "http://localhost:3000"
+            allowedMethods:
+              - GET
+              - POST
+              - PUT
+              - DELETE
+              - OPTIONS
+            allowedHeaders:
+              - "*"
+            allowCredentials: true
