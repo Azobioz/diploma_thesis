@@ -48,4 +48,15 @@ public class BoardElementController {
 
         return boardElementService.updateElement(element);
     }
+
+    @DeleteMapping("/{elementId}")
+    public void deleteElement(@PathVariable("boardId") Long boardId,
+                              @PathVariable("elementId") Long elementId) {
+        Board board = boardRepository.findBoardById(boardId);
+        if (board == null) {
+            throw new RuntimeException("Board not found");
+        }
+
+        boardElementService.deleteElement(elementId, boardId);
+    }
 }

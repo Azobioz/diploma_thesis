@@ -33,4 +33,15 @@ public class BoardElementService {
 
         return repository.save(existing);
     }
+
+    public void deleteElement(Long elementId, Long boardId) {
+        BoardElement element = repository.findById(elementId)
+                .orElseThrow(() -> new RuntimeException("Element not found"));
+
+        if (!element.getBoard().getId().equals(boardId)) {
+            throw new RuntimeException("Element does not belong to this board");
+        }
+
+        repository.delete(element);
+    }
 }

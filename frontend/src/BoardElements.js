@@ -1,6 +1,6 @@
 import BoardElement from "./BoardElement";
 
-function BoardElements({ elements, onDragStop, onResizeStop }) {
+function BoardElements({ elements, onDragStop, onResizeStop, onTextChange, onDelete}) {
     return (
         <div className="board-element">
             {elements.map(el => (
@@ -9,6 +9,8 @@ function BoardElements({ elements, onDragStop, onResizeStop }) {
                     element={el}
                     onDragStop={onDragStop}
                     onResizeStop={onResizeStop}
+                    onTextChange={onTextChange}
+                    onDelete={onDelete}
                 />
             ))}
         </div>

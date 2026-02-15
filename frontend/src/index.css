@@ -41,7 +41,7 @@ body {
 }
 
 .board-side-bar {
-  position: relative; /* Важно для абсолютного позиционирования подменю */
+  position: relative;
   width: 50px;
   height: 300px;
   font-size: 20px;
@@ -68,7 +68,7 @@ body {
 }
 
 .board-side-bar-submenu {
-  position: absolute; /* Главное — абсолютное позиционирование */
+  position: absolute;
   left: 60px;
   display: flex;
   flex-direction: row;
@@ -79,10 +79,49 @@ body {
 
   background: #51A6FB;
   border-radius: 10px;
-  z-index: 100;           /* чтобы было поверх */
+  z-index: 100;
 }
 
 .board-element {
   overflow: hidden;
   z-index: 1000;
+}
+
+.lines-between-buttons {
+  display: flex;
+  align-items: center;
+}
+
+.lines-between-buttons > * {
+  padding: 0 20px;
+  display: flex;
+  align-items: center;
+  height: 40px;
+  border-right: 3px solid black;
+}
+
+.board-title {
+  cursor: pointer;
+  font-size: 18px;
+  font-weight: bold;
+}
+
+.board-title-input {
+  border: none;
+  outline: none;
+  font-size: 18px;
+  font-weight: bold;
+  background: transparent;
+}
+
+.left-panel {
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 1000px;
+  height: 100vh;
+
+  background-color: #0051ff;
+  border-right: 1px solid rgba(0, 0, 0, 0.2);
+
 }

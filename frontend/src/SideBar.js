@@ -1,7 +1,7 @@
 import { Button } from "react-bootstrap";
 import {useState} from "react";
 
-function Sidebar({onAddSquare}) {
+function Sidebar({onAddSquare, onAddTriangle}) {
 
     const [showSubmenu, setShowSubmenu] = useState(false);
 
@@ -16,7 +16,9 @@ function Sidebar({onAddSquare}) {
                     <Button onClick={onAddSquare}>
                         <i className="bi bi-app"></i>
                     </Button>
-                    <Button>🟢</Button>
+                    <Button onClick={onAddTriangle}>
+                        <i className="bi bi-triangle"></i>
+                    </Button>
                     <Button>🟡</Button>
                 </div>
             )}

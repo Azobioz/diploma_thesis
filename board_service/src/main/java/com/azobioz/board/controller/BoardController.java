@@ -4,6 +4,7 @@ package com.azobioz.board.controller;
 import com.azobioz.board.dto.BoardRequest;
 import com.azobioz.board.dto.GetBoardResponse;
 import com.azobioz.board.dto.GetBoardsResponse;
+import com.azobioz.board.dto.UpdateBoardRequest;
 import com.azobioz.board.service.BoardService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
@@ -33,8 +34,8 @@ public class BoardController {
     }
 
     @PutMapping("/{id}/edit")
-    public GetBoardResponse editBoard(@PathVariable("id") Long id, @RequestBody BoardRequest request) {
-        return boardService.editBoard(id, request);
+    public GetBoardResponse editBoardName(@PathVariable("id") Long id, @RequestBody UpdateBoardRequest request) {
+        return boardService.updateBoardName(id, request);
     }
 
     @DeleteMapping("/{id}/delete")

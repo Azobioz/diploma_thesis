@@ -14,23 +14,25 @@ public class BoardElement {
     private Long id;
 
     @Column(nullable = false)
-    private String type; // например: "square", "circle", "text"
+    private String type;
 
     @Column(nullable = false)
-    private int x; // позиция по оси X
+    private int x;
 
     @Column(nullable = false)
-    private int y; // позиция по оси Y
+    private int y;
 
     @Column
-    private int width; // ширина элемента
+    private int width;
 
     @Column
-    private int height; // высота элемента
+    private int height;
 
     @Column
     private String color;
 
+    @Column(columnDefinition = "TEXT")
+    private String text;
 
     @JsonIgnore
     @ManyToOne(fetch = FetchType.LAZY)
