@@ -1,7 +1,7 @@
 import { useParams } from "react-router-dom";
 import HeaderPanel from "./HeaderPanel";
 import Sidebar from "./SideBar";
-import { useEffect, useState} from "react";
+import {useEffect, useState} from "react";
 import axios from "axios";
 import BoardElements from "./BoardElements";
 
@@ -24,14 +24,14 @@ function BoardPage() {
     }, [boardId]);
 
     useEffect(() => {
+        const loadElements = () => {
+            axios
+                .get(`http://localhost:8081/boards/${boardId}/elements`)
+                .then(res => setElements(res.data));
+        };
+
         loadElements();
     }, [boardId]);
-
-    const loadElements = () => {
-        axios
-            .get(`http://localhost:8081/boards/${boardId}/elements`)
-            .then(res => setElements(res.data))
-    };
 
     const updateBoardTitleInBoard = (newTitle) => {
 
@@ -67,21 +67,21 @@ function BoardPage() {
         createElement("triangle", "#E8D79A");
     };
 
-    const updateElement = async (elementId, width, height, x, y) => {
-        await fetch(`http://localhost:8081/boards/${boardId}/elements/${elementId}`, {
-            method: "PUT",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-                width,
-                height,
-                x,
-                y
-            })
-        });
-
-    };
+    // const updateElement = async (elementId, width, height, x, y) => {
+    //     await fetch(`http://localhost:8081/boards/${boardId}/elements/${elementId}`, {
+    //         method: "PUT",
+    //         headers: {
+    //             "Content-Type": "application/json"
+    //         },
+    //         body: JSON.stringify({
+    //             width,
+    //             height,
+    //             x,
+    //             y
+    //         })
+    //     });
+    //
+    // };
 
     const updatePosition = (elementId, x, y) => {
 

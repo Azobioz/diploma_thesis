@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
-import { getBoards } from "./BoardService";
 import { Link } from 'react-router-dom'
-import { ListGroup, Row, Col, Badge } from "react-bootstrap";
+import { ListGroup, Row, Col } from "react-bootstrap";
+import axios from "axios";
 
 function ListOfBoards() {
 
@@ -10,8 +10,8 @@ function ListOfBoards() {
     useEffect(() => {
         const fetchBoards = async () => {
             try {
-                const data = await getBoards();
-                setBoards(data);
+                const response = await axios.get("http://localhost:8081/boards");
+                setBoards(response.data);
             } catch (error) {
                 console.error("Ошибка загрузки:", error);
             }

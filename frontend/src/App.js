@@ -1,12 +1,12 @@
 import { Routes, Route } from "react-router-dom";
-import ListOfBoards from "./ListOfBoards";
 import BoardPage from "./BoardPage"
+import MainPage from "./MainPage";
 
 
 function App() {
     return (
         <Routes>
-            <Route path="/boards" element={<ListOfBoards />} />
+            <Route path="/boards" element={<MainPage />} />
             <Route path="/boards/:boardId" element={<BoardPage />} />
         </Routes>
     );

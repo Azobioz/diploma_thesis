@@ -125,3 +125,18 @@ body {
   border-right: 1px solid rgba(0, 0, 0, 0.2);
 
 }
+
+.create-board-button {
+  position: absolute;
+  top: 200px;
+  right: 20px;
+  width: 400px;
+  height: 100px;
+  font-size: 40px;
+  font-weight: bold;
+  background-color: #51A6FB;
+  border-radius: 10px;
+  color: black;
+  padding-left: 70px;
+
+}

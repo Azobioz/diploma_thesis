@@ -1,4 +1,3 @@
-rootProject.name = 'diplom_work'
-include 'board-service'
+rootProject.name = 'diploma_thesis'
 include 'board_service'
 include 'api_gateway_service'

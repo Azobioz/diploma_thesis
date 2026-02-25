@@ -10,7 +10,6 @@
           <set>
             <option value="$PROJECT_DIR$" />
             <option value="$PROJECT_DIR$/api_gateway_service" />
-            <option value="$PROJECT_DIR$/board-service" />
             <option value="$PROJECT_DIR$/board_service" />
           </set>
         </option>
