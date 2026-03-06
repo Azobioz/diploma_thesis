@@ -2,20 +2,23 @@ import {Button} from "react-bootstrap";
 import CreateBoardPanel from "./CreateBoardPanel";
 import {useState} from "react"
 
-function CreateBoardButton (name, backgroundColor) {
+function CreateBoardButton ({setBoards}) {
 
-    const [showCreateBoardPanel, setShowCreateBoardPanel] = useState(false);
+    const [showPanel, setShowPanel] = useState(false);
 
     return (
-        <>
-            <Button onClick={() => setShowCreateBoardPanel(prev => !prev)} className="create-board-button" variant="primary">
-                <i className="bi bi-plus-lg"></i>
-                Новая доска
+        <div>
+            <Button
+                variant="primary"
+                onClick={() => setShowPanel(prev => !prev)}
+                className="create-board-button"
+            >
+                <i className="bi bi-plus-lg"></i> Новая доска
             </Button>
 
-            {showCreateBoardPanel && <CreateBoardPanel />}
-        </>
-    )
+            {showPanel && <CreateBoardPanel setBoards={setBoards} closePanel={() => setShowPanel(false)} />}
+        </div>
+    );
 }
 
 export default CreateBoardButton;
