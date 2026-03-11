@@ -6,6 +6,7 @@ import com.azobioz.board.dto.GetBoardResponse;
 import com.azobioz.board.dto.GetBoardsResponse;
 import com.azobioz.board.dto.UpdateBoardRequest;
 import com.azobioz.board.service.BoardService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
@@ -19,8 +20,8 @@ public class BoardController {
     private final BoardService boardService;
 
     @PostMapping("/create")
-    public GetBoardResponse createBoard(@RequestBody BoardRequest request) {
-        return boardService.createUser(request);
+    public GetBoardResponse createBoard(@Valid @RequestBody BoardRequest request) {
+        return boardService.createBoard(request);
     }
 
     @GetMapping("/{id}")

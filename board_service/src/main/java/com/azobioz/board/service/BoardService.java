@@ -5,7 +5,6 @@ import com.azobioz.board.dto.GetBoardResponse;
 import com.azobioz.board.dto.GetBoardsResponse;
 import com.azobioz.board.dto.UpdateBoardRequest;
 import com.azobioz.board.model.Board;
-import com.azobioz.board.model.BoardLength;
 import com.azobioz.board.repository.BoardRepository;
 import org.springframework.stereotype.Service;
 
@@ -16,25 +15,28 @@ import java.util.stream.Collectors;
 public class BoardService {
 
     private BoardRepository boardRepository;
-    private BoardLength boardLength;
 
-    public BoardService(BoardRepository boardRepository, BoardLength boardLength) {
+    public BoardService(BoardRepository boardRepository) {
         this.boardRepository = boardRepository;
-        this.boardLength = boardLength;
     }
 
 
-    public GetBoardResponse createUser(BoardRequest request){
+    public GetBoardResponse createBoard(BoardRequest request){
         Board board = new Board();
         board.setName(request.name());
         board.setBackground(request.background());
         boardRepository.save(board);
-        return new GetBoardResponse(board.getName(), boardLength.getX(), boardLength.getY(), board.getBackground());
+        return new GetBoardResponse(board.getName(), board.getBackground());
     }
 
     public GetBoardResponse getBoardById(Long id){
         Board board = boardRepository.findBoardById(id);
-        return new GetBoardResponse(board.getName(), boardLength.getX(), boardLength.getY(), board.getBackground());
+
+        if(board == null){
+            throw new RuntimeException("Board with id " + id + " does not exists");
+        }
+
+        return new GetBoardResponse(board.getName(), board.getBackground());
     }
 
     public List<GetBoardsResponse> getBoards() {
@@ -55,7 +57,7 @@ public class BoardService {
             board.setName(request.name());
         }
         boardRepository.save(board);
-        return new GetBoardResponse(board.getName(), boardLength.getX(), boardLength.getY(), board.getBackground());
+        return new GetBoardResponse(board.getName(), board.getBackground());
     }
 
 }
