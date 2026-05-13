@@ -1,4 +1,6 @@
 package com.azobioz.board.dto;
 
-public record GetBoardsResponse (Long id, String name, String background) {
+import java.util.List;
+
+public record GetBoardsResponse (Long spaceId, List<GetBoardResponse> boards) {
 }

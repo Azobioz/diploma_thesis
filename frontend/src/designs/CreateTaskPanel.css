@@ -1,0 +1,241 @@
+.create-task-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+    animation: fadeIn 0.2s ease-out;
+}
+
+.create-task-panel {
+    background-color: #64A1BA;
+    border-radius: 16px;
+    padding: 30px;
+    width: 500px;
+    max-width: 90%;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+    animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.create-task-header {
+    margin-bottom: 25px;
+}
+
+.create-task-header h3 {
+    color: #000000;
+    font-size: 24px;
+    margin: 0;
+    font-weight: 600;
+}
+
+.create-task-body {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    margin-bottom: 25px;
+}
+
+.task-input-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.task-input-label {
+    color: #000000;
+    font-size: 16px;
+    font-weight: 500;
+    border-bottom: 2px solid rgba(255, 255, 255, 0.5);
+    padding-bottom: 5px;
+    display: inline-block;
+    width: fit-content;
+}
+
+.task-input-field {
+    width: 100%;
+    padding: 10px 15px;
+    background-color: transparent;
+    border: none;
+    border-bottom: 2px solid rgba(255, 255, 255, 0.5);
+    color: #000000;
+    font-size: 16px;
+    outline: none;
+    transition: border-color 0.2s;
+    box-sizing: border-box;
+}
+
+.task-input-field::placeholder {
+    color: rgba(0, 0, 0, 0.5);
+}
+
+.task-input-field:focus {
+    border-color: rgba(255, 255, 255, 0.9);
+}
+
+.task-textarea {
+    resize: vertical;
+    min-height: 80px;
+    font-family: inherit;
+}
+
+.task-datetime {
+    color: #000000;
+    cursor: pointer;
+}
+
+.task-datetime::-webkit-calendar-picker-indicator {
+    filter: invert(0);
+    cursor: pointer;
+}
+
+/* Список файлов */
+.task-files-list {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.task-file-item {
+    background-color: #E0E0E0;
+    border-radius: 10px;
+    padding: 10px 15px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.task-file-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    overflow: hidden;
+    flex: 1;
+}
+
+.task-file-info i {
+    font-size: 20px;
+    color: #2D2D30;
+}
+
+.task-file-name {
+    font-size: 14px;
+    color: #000000;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.task-file-remove {
+    background: none;
+    border: none;
+    color: #2D2D30;
+    font-size: 16px;
+    cursor: pointer;
+    padding: 5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.2s;
+    flex-shrink: 0;
+}
+
+.task-file-remove:hover {
+    color: #FF6B6B;
+}
+
+/* Кнопка прикрепления файла */
+.task-file-upload {
+    margin-top: 10px;
+}
+
+.task-file-btn {
+    background-color: #E0E0E0;
+    border: none;
+    border-radius: 10px;
+    padding: 10px 20px;
+    color: #000000;
+    font-size: 15px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: background-color 0.2s;
+}
+
+.task-file-btn:hover {
+    background-color: #D0D0D0;
+}
+
+.task-file-btn i {
+    font-size: 18px;
+}
+
+.task-error-message {
+    color: #FF6B6B;
+    font-size: 14px;
+    background-color: rgba(255, 107, 107, 0.2);
+    padding: 10px 15px;
+    border-radius: 8px;
+}
+
+.create-task-buttons {
+    display: flex;
+    justify-content: space-between;
+    gap: 15px;
+}
+
+.task-btn-cancel,
+.task-btn-confirm {
+    padding: 12px 30px;
+    border: none;
+    border-radius: 10px;
+    font-size: 16px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    flex: 1;
+}
+
+.task-btn-cancel {
+    background-color: #2D2D30;
+    color: white;
+}
+
+.task-btn-cancel:hover {
+    background-color: #3D3D40;
+}
+
+.task-btn-confirm {
+    background-color: #2D2D30;
+    color: white;
+}
+
+.task-btn-confirm:hover {
+    background-color: #3D3D40;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px) scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}

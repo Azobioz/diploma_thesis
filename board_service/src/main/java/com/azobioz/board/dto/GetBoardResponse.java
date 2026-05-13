@@ -1,4 +1,11 @@
 package com.azobioz.board.dto;
 
-public record GetBoardResponse(String name, String background) {
+import java.time.LocalDate;
+import java.util.List;
+
+public record GetBoardResponse(Long boardId,
+                               String boardName,
+                               LocalDate createdAt,
+                               Long boardCreatedByUserId,
+                               List<Long> idsOfUsersInBoard) {
 }

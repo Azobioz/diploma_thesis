@@ -1,0 +1,11 @@
+package com.azobioz.board.dto.element;
+
+public record CreateTableElementRequest(int x,
+                                        int y,
+                                        int z,
+                                        int width,
+                                        int height,
+                                        String color,
+                                        int rows,
+                                        int columns) {
+}

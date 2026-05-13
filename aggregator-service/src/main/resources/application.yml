@@ -1,0 +1,19 @@
+server:
+  port: 8081
+
+spring:
+  application:
+    name: aggregator-service
+
+# Настройка JWT валидации (та же секретка, что и в account-service)
+jwt:
+  secret: "313@#2!131#@309ff243@#32@#92gh9!12!3ff49-142@#39048190@#1234@#"
+
+# URLs внутренних сервисов
+services:
+  account:
+    url: http://localhost:8084
+  board:
+     url: http://localhost:8082
+  task:
+     url: http://localhost:8083

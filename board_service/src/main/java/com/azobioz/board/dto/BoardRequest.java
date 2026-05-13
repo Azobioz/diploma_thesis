@@ -1,13 +1,5 @@
 package com.azobioz.board.dto;
 
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Size;
+import java.util.List;
 
-public record BoardRequest(
-        @NotBlank(message = "Cannot create board without name")
-        @Size(max = 30, message = "Board name max length is 30")
-        String name,
-
-        String background
-) {
-}
+public record BoardRequest(String boardName, List<Long> addedUsersInBoardIds) {}

@@ -1,0 +1,99 @@
+.edit-board-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 3000;
+    animation: fadeIn 0.2s ease-out;
+}
+
+.edit-board-panel {
+    background-color: #64A1BA;
+    border-radius: 16px;
+    padding: 30px;
+    width: 500px;
+    max-width: 90%;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.edit-board-input {
+    width: 100%;
+    padding: 1px 1px;
+    border: none;
+    border-bottom: 4px solid rgba(255, 255, 255, 1);
+    background-color: transparent;
+    color: #000000;
+    font-size: 25px;
+    outline: none;
+    margin-bottom: 30px;
+    border-bottom-right-radius: 5px;
+    border-bottom-left-radius: 5px;
+}
+
+.edit-board-input::placeholder {
+    color: rgba(0, 0, 0, 0.6);
+}
+
+.edit-board-buttons {
+    display: flex;
+    justify-content: space-between;
+    gap: 15px;
+}
+
+.btn-cancel-edit,
+.btn-confirm-edit {
+    flex: 1;
+    padding: 12px 30px;
+    border: none;
+    border-radius: 10px;
+    font-size: 18px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-cancel-edit {
+    background-color: #2D2D30;
+    color: white;
+}
+
+.btn-cancel-edit:hover {
+    background-color: #57575D;
+}
+
+.btn-confirm-edit {
+    background-color: #2D2D30;
+    color: white;
+}
+
+.btn-confirm-edit:hover:not(:disabled) {
+    background-color: #3D3D40;
+}
+
+.btn-confirm-edit:disabled {
+    background-color: #57575D;
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px) scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}

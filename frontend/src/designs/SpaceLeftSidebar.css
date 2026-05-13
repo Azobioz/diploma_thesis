@@ -1,0 +1,315 @@
+/* Контекстное меню для пространств */
+.space-context-menu {
+    position: fixed;
+    background: #2D2D30;
+    border-radius: 12px;
+    padding: 8px 0;
+    min-width: 180px;
+    z-index: 10000;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+    animation: contextMenuFadeIn 0.15s ease-out;
+}
+
+@keyframes contextMenuFadeIn {
+    from {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+.context-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 20px;
+    color: #E0E0E0;
+    font-size: 16px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.context-menu-item i {
+    font-size: 18px;
+    width: 20px;
+    text-align: center;
+}
+
+.context-menu-item:hover {
+    background-color: #3D3D40;
+}
+
+.context-menu-item.danger {
+    color: #FF6B6B;
+}
+
+.context-menu-item.danger:hover {
+    background-color: rgba(255, 107, 107, 0.15);
+}
+
+.context-menu-divider {
+    height: 1px;
+    background-color: rgba(255, 255, 255, 0.1);
+    margin: 4px 12px;
+}
+
+/* Предотвращаем выделение текста при правом клике */
+.space-name {
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+}
+
+/* Панель информации о пространстве */
+.space-info-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10001;
+    animation: fadeIn 0.2s ease-out;
+}
+
+.space-info-panel {
+    background-color: #64A1BA;
+    border-radius: 16px;
+    padding: 30px;
+    width: 400px;
+    max-width: 90%;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.info-section {
+    margin-bottom: 20px;
+}
+
+.info-section:last-child {
+    margin-bottom: 0;
+}
+
+.info-label {
+    display: block;
+    font-size: 15px;
+    color: rgba(0, 0, 0, 1);
+    margin-bottom: 5px;
+}
+
+.info-value {
+    font-size: 20px;
+    color: #000000;
+    margin: 0;
+    padding-bottom: 1px;
+    border-bottom: 2px solid rgba(255, 255, 255, 0.5);
+}
+
+.info-value-inline {
+    font-size: 20px;
+    color: #000000;
+}
+
+/* Панель подтверждения удаления */
+.delete-confirm-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10001;
+    animation: fadeIn 0.2s ease-out;
+}
+
+.delete-confirm-panel {
+    background-color: #64A1BA;
+    border-radius: 16px;
+    padding: 30px;
+    width: 500px;
+    max-width: 90%;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.delete-confirm-text {
+    font-size: 20px;
+    color: #000000;
+    margin-bottom: 25px;
+    text-align: center;
+}
+
+.delete-confirm-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+}
+
+.btn-confirm-delete {
+    background-color: #2D2D30;
+    color: white;
+    border: none;
+    padding: 10px 30px;
+    border-radius: 10px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.btn-confirm-delete:hover {
+    background-color: #49494D;
+}
+
+.btn-cancel-delete {
+    background-color: #2D2D30;
+    color: white;
+    border: none;
+    padding: 10px 30px;
+    border-radius: 10px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.btn-cancel-delete:hover {
+    background-color: #49494D;
+}
+
+/* Панель редактирования пространства */
+.edit-space-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10001;
+    animation: fadeIn 0.2s ease-out;
+}
+
+.edit-space-panel {
+    background-color: #64A1BA;
+    border-radius: 16px;
+    padding: 30px;
+    width: 450px;
+    max-width: 90%;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Переиспользуем стили из CreateSpacePanel.css */
+.edit-space-panel .panel-input-group {
+    margin-bottom: 25px;
+}
+
+.edit-space-panel .panel-input {
+    width: 100%;
+    padding: 1px 1px;
+    border: none;
+    border-bottom: 4px solid rgba(255, 255, 255, 1);
+    background-color: transparent;
+    color: #000000;
+    font-size: 25px;
+    outline: none;
+    border-bottom-right-radius: 5px;
+    border-bottom-left-radius: 5px;
+}
+
+.edit-space-panel .panel-input::placeholder {
+    color: rgba(0, 0, 0, 0.6);
+}
+
+.edit-space-panel .panel-input.input-error {
+    border-color: #FF6B6B;
+    background-color: rgba(255, 107, 107, 0.1);
+}
+
+.edit-space-panel .input-counter {
+    position: absolute;
+    right: 15px;
+    bottom: -20px;
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.edit-space-panel .error-message {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 8px;
+    padding: 8px 12px;
+    background-color: rgba(255, 107, 107, 0.2);
+    border-radius: 6px;
+    color: #000000;
+    font-size: 18px;
+}
+
+.edit-space-panel .panel-buttons {
+    display: flex;
+    justify-content: flex-end;
+    gap: 15px;
+    margin-top: 30px;
+}
+
+.edit-space-panel .btn-cancel-create-space,
+.edit-space-panel .btn-confirm-create-space {
+    padding: 12px 30px;
+    border: none;
+    border-radius: 10px;
+    font-size: 15px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.edit-space-panel .btn-cancel-create-space {
+    background-color: #2D2D30;
+    color: white;
+}
+
+.edit-space-panel .btn-confirm-create-space {
+    background-color: #2D2D30;
+    color: white;
+}
+
+.edit-space-panel .btn-cancel-create-space:hover {
+    background-color: #57575D;
+}
+
+.edit-space-panel .btn-confirm-create-space:hover:not(.btn-disabled) {
+    background-color: #3D3D40;
+}
+
+.edit-space-panel .btn-confirm-create-space.btn-disabled {
+    background-color: #57575D;
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px) scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}

@@ -1,47 +1,77 @@
 package com.azobioz.board.controller;
 
 
-import com.azobioz.board.dto.BoardRequest;
-import com.azobioz.board.dto.GetBoardResponse;
-import com.azobioz.board.dto.GetBoardsResponse;
-import com.azobioz.board.dto.UpdateBoardRequest;
+import com.azobioz.board.dto.*;
+import com.azobioz.board.dto.invite.InvitationLinkResponse;
 import com.azobioz.board.service.BoardService;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @RestController
-@RequestMapping("/boards")
+@RequestMapping("/internal/spaces/{spaceId}/boards")
 @RequiredArgsConstructor
 public class BoardController {
 
     private final BoardService boardService;
 
+    //================ POST ========================
     @PostMapping("/create")
-    public GetBoardResponse createBoard(@Valid @RequestBody BoardRequest request) {
-        return boardService.createBoard(request);
+    public CreateBoardResponse createBoard(@PathVariable("spaceId") Long spaceId, @RequestHeader("X-User-Id") Long userId, @RequestBody BoardRequest request) {
+        return boardService.createBoard(request, spaceId, userId);
     }
 
-    @GetMapping("/{id}")
-    public GetBoardResponse getBoard(@PathVariable("id") Long id) {
-        return boardService.getBoardById(id);
+    // Для обновления last_view_at при переходе на доску
+    @PostMapping("/{boardId}/view")
+    public String updateLastViewedAt(
+            @PathVariable("spaceId") Long spaceId,
+            @PathVariable("boardId") Long boardId,
+            @RequestHeader("X-User-Id") Long userId) {
+        boardService.updateLastViewedAt(boardId, userId);
+        return "Last viewed at updated";
+    }
+
+    //================ GET ========================
+
+    // для получения досок с фильтрацией и сортировкой
+    @GetMapping("/filtered")
+    public GetBoardsResponse getFilteredBoards(
+            @PathVariable("spaceId") Long spaceId,
+            @RequestHeader("X-User-Id") Long userId,
+            @RequestParam(required = false, defaultValue = "all") String filter,
+            @RequestParam(required = false, defaultValue = "recent") String sort) {
+        return boardService.getFilteredBoards(spaceId, userId, filter, sort);
+    }
+
+    @GetMapping("/{boardId}")
+    public GetBoardResponse getBoard(@PathVariable("boardId") Long boardId) {
+        return boardService.getBoard(boardId);
     }
 
     @GetMapping
-    public List<GetBoardsResponse> getBoards() {
-        return boardService.getBoards();
+    public GetBoardsResponse getBoards(@PathVariable("spaceId") Long spaceId) {
+        return boardService.getBoards(spaceId);
     }
 
-    @PutMapping("/{id}/edit")
-    public GetBoardResponse editBoardName(@PathVariable("id") Long id, @RequestBody UpdateBoardRequest request) {
-        return boardService.updateBoardName(id, request);
+    // Получить доски пользователя
+    @GetMapping("/users/{userId}/created-boards")
+    public List<BoardDto> getUserCreatedBoards(@PathVariable("userId") Long userId) {
+        return boardService.getBoardsCreatedByUser(userId);
     }
 
-    @DeleteMapping("/{id}/delete")
-    public String deleteBoard(@PathVariable("id") Long id) {
-        return boardService.deleteBoardById(id);
+    //================ PUT ========================
+    @PutMapping("/{boardId}/edit")
+    public String editBoardName(@PathVariable("boardId") Long boardId, @RequestHeader("X-User-Id") Long userId, @RequestBody UpdateBoardNameRequest request, @PathVariable("spaceId") Long spaceId) {
+        return boardService.updateBoardName(boardId, userId, request.boardName());
     }
+
+    //================ DELETE ========================
+    @DeleteMapping("/{boardId}/delete")
+    public String deleteBoard(@PathVariable("boardId") Long boardId, @RequestHeader("X-User-Id") Long userId) {
+        return boardService.deleteBoard(boardId, userId);
+    }
+
+
 
 }

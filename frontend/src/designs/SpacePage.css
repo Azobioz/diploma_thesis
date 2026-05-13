@@ -1,0 +1,571 @@
+
+
+body, html {
+    overflow-x: hidden; /* Запрещаем горизонтальную прокрутку */
+    overflow-y: hidden;
+}
+
+.space-header {
+    background-color: #64A1BA;
+    height: 80px;
+
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 20px;
+    position: relative;
+}
+
+.header-center {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    flex: 1;
+    justify-content: center;
+    margin: 0 20px;
+}
+
+.header-right {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    position: relative;
+}
+
+.boardiox-text-in-header {
+    position: relative;
+    font-size: 60px;
+    bottom: 5px;
+    right: 10px;
+    font-weight: bold;
+}
+
+.user-avatars-list {
+    position: relative;
+    width: 250px;
+    height: 60px;
+    right: 100px;
+    bottom: auto;
+    background-color: #82D2F3;
+    border-radius: 20px;
+    cursor: pointer;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    padding:  1px;
+    gap: 10px;  /* Отступ между аватарками */
+}
+
+.remaining-count {
+    position: relative;
+    font-size: 25px;
+    left: 10px;
+}
+
+.avatar-in-list {
+    border-radius: 50%;
+    width: 50px;
+    height: 50px;
+    left: 10px;
+    top: 1px;
+
+    font-size: 30px;
+    font-weight: bold;
+    color: white;
+    justify-content: center;
+    align-items: center;
+    display: flex;
+}
+
+
+.invite-button {
+    position: relative;
+    background-color: #82D2F3;
+    box-shadow: none;
+    border: none;
+    outline: none;
+    left: auto;
+    bottom: auto;
+    font-size: 35px;
+    width: auto;
+    height: 60px;
+    border-radius: 15px;
+    justify-content: center;
+    align-items: center;
+    display: flex;
+    font-weight: bold;
+    white-space: nowrap;  /* Чтобы текст не переносился */
+
+}
+
+.plus-icon-invite-button {
+    font-size: 60px;
+    margin-bottom: 10px;
+    margin-right: 5px;
+}
+
+.space-left-side-bar {
+    position: relative;
+    background-color: #2D2D30;
+    width: 250px;
+    height: 100vh;
+    color: #FFFFFF;
+
+}
+
+.spaces-name-list {
+    position: relative;
+    top: 10px;
+}
+
+.space-name.active {
+    position: relative;
+    background-color: #57575D;
+    padding: 12px 20px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    width: 250px;
+    right: 31px;
+}
+
+.space-name {
+    position: relative;
+    font-size: 20px;
+    margin-right: 20px;
+    justify-content: center;
+    align-items: center;
+    display: flex;
+    margin-top: 10px;
+    height: 70px;
+    width: 250px;
+    right: 31px;
+    cursor: pointer;
+
+    /* Для переноса текста: */
+    white-space: normal;     /* Разрешает перенос строк */
+    word-wrap: break-word;   /* Переносит длинные слова */
+    overflow-wrap: break-word; /* Альтернативное свойство для переноса */
+
+    /* Для лучшего отображения: */
+    padding: 10px 15px;      /* Внутренние отступы */
+    line-height: 1.4;        /* Межстрочный интервал */
+    text-align: center;      /* Центрирование текста (или left для выравнивания по левому краю) */
+    box-sizing: border-box;  /* Чтобы padding не увеличивал ширину */
+}
+
+/* Стили для поля с ошибкой */
+.panel-input.input-error {
+    border-color: #FF6B6B;
+    background-color: rgba(255, 107, 107, 0.1);
+}
+
+/* Счетчик символов */
+.input-counter {
+    position: absolute;
+    right: 15px;
+    bottom: -20px;
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.7);
+}
+
+/* Сообщение об ошибке */
+.error-message {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 8px;
+    padding: 8px 12px;
+    background-color: rgba(255, 107, 107, 0.2);
+    border-radius: 6px;
+    color: #000000;
+    font-size: 18px;
+    animation: shake 0.3s ease-in-out;
+}
+
+.error-message i {
+    font-size: 25px;
+}
+
+/* Отключенная кнопка */
+.btn-confirm-create-board.btn-disabled {
+    background-color: #57575D;
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+.space-name:before {
+    content: '';
+    position: absolute;
+
+    width: 300px; /* Толщина линии */
+    height: 10px;
+    bottom: 70px;
+    background-color: #5171B5;
+}
+
+.space-name:after {
+    content: '';
+    position: absolute;
+    width: 260px; /* Толщина линии */
+    height: 10px;
+    top: 70px;
+    background-color: #5171B5;
+}
+
+.space-name:hover {
+    background-color: rgba(255, 255, 255, 0.05); /* Легкая подсветка при наведении */
+}
+
+.add-space-button {
+    position: relative;
+    box-shadow: none;
+    border: none;
+    outline: none;
+    justify-content: center;
+    align-items: center;
+    display: flex;
+    width: 250px;
+    height: 80px;
+    top: 15px;
+    font-size: 30px;
+    background-color: transparent;
+    color: white;
+}
+
+.add-space-button:hover {
+    background-color: rgba(255, 255, 255, 0.05); /* Легкая подсветка при наведении */
+}
+
+.add-space-button i {
+    position: relative;
+    width: 40px;
+    height: 100px;
+    margin-top: 60px;
+    margin-left: 10px;
+}
+
+.space-main-content {
+    position: absolute;
+    left: 600px;
+    top: 30px;
+    height: 200px;
+    width: 200px;
+}
+
+.sorter-group {
+    position: relative;
+    left: 600px;
+    bottom: 200px;
+    width: 500px;
+    height: 100px;
+    color: white;
+    gap: 100px;
+}
+
+.sort-by-text {
+    position: relative;
+    display: flex;
+    font-size: 25px;
+    top: 30px;
+}
+
+.sort-by-list {
+    position: relative;
+    left: 220px;
+    font-size: 25px;
+    bottom: 10px;
+    appearance: none;
+    border: none;
+    outline: none;
+    justify-content: center;
+    align-items: center;
+    width: 200px;
+    display: flex;
+    background-color: #D9D9D9;
+}
+
+.filters-sorters {
+    position: relative;
+    width: 500px;
+    top: 200px;
+    height: 100px;
+    color: white;
+}
+
+.filter-group {
+    position: relative;
+    right: 100px;
+    bottom: 100px;
+    width: 500px;
+    height: 100px;
+
+    color: white;
+}
+
+.filter-by-list {
+    position: relative;
+    bottom: 14px;
+    left: 170px;
+    font-size: 25px;
+    appearance: none;
+    background-color: #D9D9D9;
+
+}
+
+.filter-by-text {
+    position: relative;
+    font-size: 25px;
+    top: 25px;
+}
+
+.boards-header {
+    position: relative;
+    top: 450px;
+}
+
+.boards-row {
+    position: relative;
+    width: 1430px; /* Ограничиваем ширину */
+    right: 100px;
+    height: calc(100vh - 500px); /* Высота с учётом шапки и фильтров */
+    flex: 1; /* Занимает всё доступное пространство */
+    overflow-y: auto; /* Включаем вертикальную прокрутку */
+    overflow-x: visible; /* Запрещаем горизонтальную прокрутку */
+    display: flex;
+    flex-direction: column;
+    padding-right: 10px; /* Для скроллбара */
+
+}
+
+.board-row {
+    cursor: pointer;
+    position: relative;
+    background-color: #2D2D30;
+    width: 1400px;
+    height: 55px;
+    margin-bottom: 20px;
+    color: white;
+    border-radius: 10px;
+    /*flex-shrink: 0; !* Не сжимать доски *!*/
+    /*margin-left: auto;*/
+    /*margin-right: auto;*/
+}
+
+
+.boards-row::-webkit-scrollbar {
+    width: 12px;
+
+}
+
+.boards-row::-webkit-scrollbar-track {
+    border-radius: 4px;
+    background-color: #D9D9D9;
+}
+
+.boards-row::-webkit-scrollbar-thumb {
+    position: relative;
+    border-radius: 4px;
+    background-color: #2D2D30;
+}
+
+.boards-in-space-text {
+    position: relative;
+    font-size: 50px;
+    top: 110px;
+    right: 250px;
+    color: white;
+    font-weight: bold;
+    width: 400px;
+}
+
+.tasks-and-create-board-text {
+    position: relative;
+    top: 30px;
+    left: 800px;
+    width: 470px;
+    height: 70px;
+    background-color: #51A6FB;
+}
+
+.tasks-button {
+    position: relative;
+    background-color: transparent;
+    box-shadow: none;
+    border: none;
+    outline: none;
+    justify-content: center;
+    align-items: center;
+    display: flex;
+    top: 4px;
+    left: 5px;
+    font-size: 40px;
+    border-radius: 20px;
+    width: 160px;
+    height: 58px;
+}
+
+.create-board-button {
+    position: relative;
+    background-color: transparent;
+    box-shadow: none;
+    border: none;
+    outline: none;
+    justify-content: center;
+    align-items: center;
+    display: flex;
+    bottom: 103px;
+    left: 180px;
+    font-size: 40px;
+    border-radius: 20px;
+    width: 283px;
+    height: 58px;
+}
+
+.create-board-button:hover {
+    background-color: rgba(73, 145, 217, 1);
+    transition: background-color 0.2s ease
+}
+
+.tasks-button:hover {
+    background-color: rgba(73, 145, 217, 1);
+    transition: background-color 0.2s ease
+}
+
+.line-between-tasks-and-create-board-buttons {
+    position: relative;
+    background-color: #D9D9D9;
+    width: 4px;
+    height: 50px;
+    border-radius: 5px;
+    left: 173px;
+    bottom: 47px;
+}
+
+.boards-group {
+    position: relative;
+    height: calc(100vh - 350px); /* Занимает оставшееся место после заголовков */
+    display: flex;
+    flex-direction: column;
+    right: 60px;
+    /*overflow-x: hidden; !* Запрещаем горизонтальную прокрутку *!*/
+
+}
+
+.boards-header {
+    color: white;
+    font-size: 20px;
+    flex-shrink: 0; /* Не сжимать заголовок */
+    margin-bottom: 80px; /* Отступ от списка */
+
+    position: relative; /* Заголовок остаётся на месте */
+    top: 100px;
+    padding:  10px 0;
+}
+
+.board-name-text {
+    position: relative;
+    right: 100px;
+    /*bottom: 340px;*/
+}
+
+.created-by-user-text {
+    position: relative;
+    bottom: 27px;
+    left: 1030px;
+}
+
+.three-dots-in-board-row {
+    position: relative;
+    left: 1300px;
+    bottom: 63px;
+    width: 50px;
+}
+
+.three-dots-in-board-row-button {
+    box-shadow: none;
+    border-color: transparent;
+    background-color: transparent;
+    color: white;
+    font-size: 40px;
+}
+
+.board-name-data {
+    position: relative;
+    left: 10px;
+    top: 12px;
+    font-size: 20px;
+    width: 950px;
+}
+
+.owner-of-board-data {
+    position: relative;
+    left: 1125px;
+    bottom: 16px;
+    font-size: 20px;
+    width: 100px;
+
+    justify-content: center;
+    align-items: center;
+    display: flex;
+}
+
+
+/* Контекстное меню для досок */
+.board-context-menu {
+    background-color: #2D2D30;
+    border-radius: 12px;
+    padding: 1px 0;
+    min-width: 250px;
+    box-shadow: 0 1px 24px rgba(0, 0, 0, 0.5);
+    animation: contextMenuFadeIn 0.15s ease-out;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+@keyframes contextMenuFadeIn {
+    from {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+.context-menu-item {
+    background: none;
+    border: none;
+    color: #E0E0E0;
+    padding: 5px 5px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    text-align: left;
+    width: 100%;
+    font-family: inherit;
+}
+
+.context-menu-item:hover {
+    background-color: #3D3D40;
+}
+
+.context-menu-item.danger {
+    color: black;
+}
+
+.context-menu-item.danger:hover {
+    background-color: rgba(193, 193, 193, 0.15);
+}
+
+/* Разделитель между кнопками (опционально) */
+.context-menu-item:not(:last-child) {
+    border-bottom: 1px solid #82D2F3;
+    padding-bottom: 12px;
+    margin-bottom: 8px;
+}
+
+.context-menu-item:last-child {
+    border-bottom: none;
+}

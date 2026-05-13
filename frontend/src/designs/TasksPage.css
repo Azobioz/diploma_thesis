@@ -1,0 +1,410 @@
+.tasks-page {
+    min-height: 100vh;
+    background-color: #5171B5;
+}
+
+/* Dropdown для выбора доски */
+.board-dropdown-wrapper {
+    position: relative;
+    display: inline-block;
+}
+
+.board-dropdown-button {
+    background-color: #2D2D30;
+    color: white;
+    border: none;
+    padding: 10px 40px 10px 20px;
+    border-radius: 10px;
+    font-size: 28px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    transition: background-color 0.2s;
+    min-width: 200px;
+}
+
+.board-dropdown-button:hover {
+    background-color: #3D3D40;
+}
+
+.board-dropdown-button i {
+    font-size: 20px;
+    position: absolute;
+    right: 15px;
+}
+
+.board-dropdown-item {
+    padding: 15px 20px;
+    color: white;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    font-size: 18px;
+}
+
+.board-dropdown-item:hover {
+    background-color: #3D3D40;
+}
+
+.board-dropdown-item.active {
+    background-color: #7C8495; /* Голубой цвет как на скриншоте */
+    font-weight: 600;
+}
+
+
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.tasks-header {
+    background-color: #64A1BA;
+    height: 80px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 30px;
+}
+
+.tasks-header-left .logo {
+    font-size: 32px;
+    font-weight: bold;
+    color: white;
+    cursor: pointer;
+}
+
+.tasks-header-right .user-avatar {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background-color: #FF6B6B;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    font-weight: bold;
+    color: white;
+    cursor: pointer;
+    overflow: hidden;
+}
+
+.tasks-header-right .user-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.tasks-content {
+    padding-top: 40px;
+    padding-left: 40px;
+    /*padding: 40px;*/
+}
+
+.space-name-in-tasks {
+    font-size: 40px;
+    color: white;
+    margin: 0 0 30px 0;
+    font-weight: 500;
+}
+
+.tasks-board-title {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 40px;
+    font-size: 28px;
+    color: white;
+}
+
+.board-dropdown {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+}
+
+.board-name-clickable {
+    background-color: #2D2D30;
+    padding: 0 100px;
+    height: 40px;
+    border-radius: 10px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: background-color 0.2s;
+}
+
+.board-name-clickable:hover {
+    background-color: #3D3D40;
+}
+
+.board-name-clickable i {
+    font-size: 14px;
+}
+
+.board-dropdown-empty {
+    padding: 15px 20px;
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 16px;
+    text-align: center;
+}
+
+.board-dropdown-menu {
+    position: absolute;
+    top: calc(100% + 10px);
+    left: 0;
+    background-color: #2D2D30;
+    border-radius: 10px;
+    min-width: 250px;
+    z-index: 1000;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+    animation: fadeIn 0.2s ease;
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.board-dropdown-menu::-webkit-scrollbar {
+    width: 12px;
+
+}
+
+.board-dropdown-menu::-webkit-scrollbar-track {
+    border-radius: 4px;
+    background-color: #D9D9D9;
+}
+
+.board-dropdown-menu::-webkit-scrollbar-thumb {
+    position: relative;
+    border-top-right-radius: 4px;
+    border-bottom-right-radius: 4px;
+    background-color: #2D2D30;
+}
+
+.task-lists-container {
+    display: flex;
+    gap: 100px;
+    overflow-x: auto;
+    padding-bottom: 20px;
+    align-items: flex-start;
+}
+
+.task-list {
+    background-color: #64A1BA;
+    border-radius: 5px;
+    padding: 15px;
+    min-width: 520px;
+    max-width: 520px;
+    display: flex;
+    flex-direction: column;
+    height: auto;
+}
+
+.task-list-header {
+    position: relative;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+    bottom: 20px;
+}
+
+.list-name {
+    font-size: 25px;
+    color: #000000;
+    margin: 20px 10px 10px;
+    font-weight: 600;
+    overflow: hidden;
+}
+
+.list-menu-btn {
+    position: relative;
+    background: none;
+    border: none;
+    color: #000000;
+    font-size: 24px;
+    cursor: pointer;
+    padding: 1px;
+    top: 5px;
+}
+
+.list-menu-btn i {
+    font-size: 50px;
+}
+
+.task-cards {
+    flex: 1;
+    overflow-y: auto;
+    max-height: 400px;
+    margin-bottom: 10px;
+    max-width: 500px;
+    padding-right: 10px;
+}
+
+.task-card {
+    background-color: #2D2D30;
+    border-radius: 12px;
+    padding: 20px 20px;
+    margin-bottom: 35px;
+    color: white;
+}
+
+.task-title {
+    /*margin: 0 0 12px 0;*/
+    position: relative;
+    font-size: 20px;
+    line-height: 1.3;
+    word-wrap: break-word;
+    /*text-align: center;*/
+    top: 10px;
+}
+
+.task-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.task-deadline {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 20px;
+    color: black;
+    background-color: #D9D9D9;
+    width: auto;
+    padding: 1px 10px;
+    border-radius: 20px;
+    top: 15px;
+    right: 3px;
+
+}
+
+.task-deadline i {
+    font-size: 20px;
+}
+
+.task-creator-avatar-in-task-card {
+    position: relative;
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    background-color: #FF6B6B;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    overflow: hidden;
+    top: 15px;
+    left: 5px;
+}
+
+.task-creator-avatar-in-task-card img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.add-task-btn {
+    position: relative;
+    background-color: #528498;
+    border: none;
+    border-radius: 15px;
+    padding: 5px 15px;
+    color: black;
+    font-size: 17px;
+    cursor: pointer;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: background-color 0.2s;
+    width: 215px;
+    left: 130px;
+}
+
+.add-task-btn i {
+    color: black;
+    font-size: 25px;
+    font-weight: bold;
+}
+
+.add-task-btn:hover {
+    background-color: rgba(0, 0, 0, 0.3);
+}
+
+.create-list-btn {
+    background-color: #64A1BA;
+    border: transparent;
+    border-radius: 16px;
+    padding: 5px;
+    min-width: 320px;
+    color: black;
+    font-size: 34px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    transition: all 0.2s;
+    flex-shrink: 0;
+}
+
+.create-list-btn:hover {
+    background-color: rgba(100, 161, 186, 0.8);
+    border-color: white;
+}
+
+.create-list-btn i {
+    font-size: 34px;
+    font-weight: bold;
+    color: black;
+}
+
+.tasks-loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    font-size: 24px;
+    color: white;
+}
+
+/* Скроллбар для списков */
+.task-cards::-webkit-scrollbar {
+    width: 8px;
+}
+
+.task-cards::-webkit-scrollbar-track {
+    border-radius: 4px;
+    background-color: white;
+
+}
+
+.task-cards::-webkit-scrollbar-thumb {
+    border-radius: 4px;
+    background-color: #2D2D30;
+
+}
+
+.task-lists-container::-webkit-scrollbar {
+    height: 10px;
+}
+
+.task-lists-container::-webkit-scrollbar-track {
+    border-radius: 6px;
+    background-color: transparent;
+}
+
+.task-lists-container::-webkit-scrollbar-thumb {
+    border-radius: 6px;
+    background-color: #2D2D30;
+}

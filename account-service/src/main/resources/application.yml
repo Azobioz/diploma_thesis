@@ -1,0 +1,23 @@
+server:
+  port: 8084
+
+spring:
+  datasource:
+    driver-class-name: org.postgresql.Driver
+    url: jdbc:postgresql://localhost:5432/boardiox_db
+    username: postgres
+    password: 12345
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+      show-sql: true
+      properties:
+        hibernate:
+          dialect: org.hibernate.dialect.PostgreSQLDialect
+          format_sql: true
+
+jwt:
+  secret: "313@#2!131#@309ff243@#32@#92gh9!12!3ff49-142@#39048190@#1234@#"
+  access-expiration: 1800000       # 30 минут в миллисекундах
+  refresh-expiration: 2592000000 # 30 дней

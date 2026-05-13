@@ -1,0 +1,182 @@
+/* 1. Сбрасываем отступы по умолчанию у браузера */
+body, html {
+    margin: 0;
+    padding: 0;
+    height: 100%; /* Важно для некоторых браузеров */
+    background-color: #5171B5;
+}
+
+.sign-in-and-sign-up-text {
+    margin-left: 300px;
+    font-size: 80px;
+    color: white;
+}
+
+.sign-in-text {
+    position: absolute;
+    top: 40px;
+}
+
+
+.sign-up-text {
+    position: absolute;
+    top: 40px;
+    left: 600px;
+}
+
+.boardiox-text {
+    font-size: 100px;
+    position: absolute;
+    right: 100px;
+    top: 50px;
+}
+
+.tab.active {
+    color: #ffffff;
+}
+
+/** Полоска подчеркивания */
+.underline {
+    position: relative;
+    display: flex;
+    top: 160px;
+    height: 4px;
+    background-color: #7dd3c0;
+    border-radius: 2px;
+    transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    left: 303px;
+}
+
+/*Форма для регистрации*/
+.register-form-container {
+    position: absolute;
+    left: 400px;
+    top: 250px;
+
+    font-size: 30px;
+    background-color: transparent;
+    border: transparent;
+    max-width: 1200px;
+    max-height: 1200px;
+    width: 100%;
+    height: 100%;
+
+    padding: 0 40px;
+    box-sizing: border-box;
+}
+
+/*Форма для входа*/
+.sign-in-form-container {
+    position: absolute;
+    left: 300px;
+    top: 250px;
+
+    font-size: 30px;
+    background-color: transparent;
+    border: transparent;
+    max-width: 500px;
+    max-height: 1200px;
+    width: 100%;
+    height: 100%;
+
+    padding: 0 40px;
+    box-sizing: border-box;
+}
+
+.nickname-email-texts-row {
+
+}
+
+.registration-form .input {
+    background-color: transparent;
+    border: 1px solid #ccc;
+}
+
+.submit-button-sign-up {
+    position: absolute;
+    top: 250px;
+    left: -105px;
+    background-color: #2D2D30;
+    border-radius: 10px;
+    border: none;              /* Убирает рамку */
+    outline: none;             /* Убирает синюю/черную обводку при клике */
+    box-shadow: none;          /* Убирает тень, если она есть */
+    color: #FFFFFF;
+    padding: 10px 20px; /*  сверху/снизу, слева/справа */
+}
+
+.submit-button-sign-in {
+    position: absolute;
+    background-color: #2D2D30;
+    border-radius: 10px;
+    border: none;              /* Убирает рамку */
+    outline: none;             /* Убирает синюю/черную обводку при клике */
+    box-shadow: none;          /* Убирает тень, если она есть */
+    color: #FFFFFF;
+    padding: 10px 20px; /*  сверху/снизу, слева/справа */
+    top: 150px;
+}
+
+.nickname-email-texts-row {
+
+}
+
+.nickname-input {
+
+}
+
+.nickname-field {
+    position: absolute;
+    left: -100px;
+}
+
+.email-field {
+    position: absolute;
+    left: 300px;
+}
+
+.passwords-row {
+
+}
+
+.password-field {
+    position: absolute;
+    top: 100px;
+    left: -100px;
+}
+
+.confirm-password-field {
+    position: absolute;
+    top: 100px;
+    left: 300px;
+}
+
+/* Стили для полей ввода */
+.styled-input {
+    background: transparent; /* Прозрачный фон */
+    border: none;            /* Убираем рамку */
+    border-bottom: 1px solid rgba(255, 255, 255, 0.6); /* Только нижняя линия */
+    padding: 25px -10px; /* px сверху и снизу делают поле выше. */
+
+
+    color: #000000;
+    font-size: 30px;         /* Размер шрифта */
+    width: 100%;             /* На всю ширину */
+    outline: none;           /* Убираем синюю обводку при клике */
+}
+
+/* Стили для текста-подсказки (placeholder) */
+.styled-input::placeholder {
+    color: #FFFFFF;
+    font-size: 30px;                 /* Такой же размер, как у основного текста */
+}
+
+/* Эффект при фокусе (клике на поле) */
+.styled-input:focus {
+    border-bottom-color: #ffffff; /* Линия становится ярко-белой */
+}
+
+/* Опционально: можно сделать плейсхолдер чуть прозрачнее при фокусе */
+.styled-input:focus::placeholder {
+    opacity: 1;
+}

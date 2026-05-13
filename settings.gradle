@@ -1,3 +1,5 @@
-rootProject.name = 'diploma_thesis'
+rootProject.name = 'boardiox'
 include 'board_service'
-include 'api_gateway_service'
+include 'aggregator-service'
+include 'account-service'
+include 'task-service'
