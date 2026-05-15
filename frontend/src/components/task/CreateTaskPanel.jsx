@@ -3,7 +3,8 @@ import React, { useState, useEffect, useRef } from 'react';
 const CreateTaskPanel = ({ isOpen, onClose, onSubmit, taskListId }) => {
     const [taskName, setTaskName] = useState('');
     const [taskDescription, setTaskDescription] = useState('');
-    const [deadline, setDeadline] = useState('');
+    const [deadlineDate, setDeadlineDate] = useState('');
+    const [deadlineTime, setDeadlineTime] = useState('');
     const [files, setFiles] = useState([]);
     const [error, setError] = useState('');
     const panelRef = useRef(null);
@@ -29,7 +30,8 @@ const CreateTaskPanel = ({ isOpen, onClose, onSubmit, taskListId }) => {
         if (isOpen) {
             setTaskName('');
             setTaskDescription('');
-            setDeadline('');
+            setDeadlineDate('');
+            setDeadlineTime('')
             setFiles([]);
             setError('');
         }
@@ -38,10 +40,23 @@ const CreateTaskPanel = ({ isOpen, onClose, onSubmit, taskListId }) => {
     const handleClose = () => {
         setTaskName('');
         setTaskDescription('');
-        setDeadline('');
+        setDeadlineDate('');
+        setDeadlineTime('')
         setFiles([]);
         setError('');
         onClose();
+    };
+
+    const handleDateChange = (date, time) => {
+        setDeadlineDate(date);
+        setDeadlineTime(time);
+    };
+
+    const getDeadlineDateTime = () => {
+        if (!deadlineDate) return null;
+
+        const timeStr = deadlineTime || '00:00';
+        return `${deadlineDate}T${timeStr}:00`;
     };
 
     const handleFileSelect = (e) => {
@@ -64,7 +79,7 @@ const CreateTaskPanel = ({ isOpen, onClose, onSubmit, taskListId }) => {
         onSubmit({
             taskName: taskName.trim(),
             taskDescription: taskDescription.trim(),
-            deadline: deadline || null,
+            deadline: getDeadlineDateTime(),
             files: files
         });
 
@@ -123,12 +138,22 @@ const CreateTaskPanel = ({ isOpen, onClose, onSubmit, taskListId }) => {
                     {/* Дедлайн */}
                     <div className="task-input-group">
                         <label className="task-input-label">Дедлайн</label>
-                        <input
-                            type="datetime-local"
-                            className="task-input-field task-datetime"
-                            value={deadline}
-                            onChange={(e) => setDeadline(e.target.value)}
-                        />
+                        <div className="datetime-inputs">
+                            <input
+                                type="date"
+                                className="task-input-field task-date"
+                                value={deadlineDate}
+                                onChange={(e) => handleDateChange(e.target.value, deadlineTime)}
+                                placeholder="Дата"
+                            />
+                            <input
+                                type="time"
+                                className="task-input-field task-time"
+                                value={deadlineTime}
+                                onChange={(e) => handleDateChange(deadlineDate, e.target.value)}
+                                placeholder="Время"
+                            />
+                        </div>
                     </div>
 
                     {/* Прикрепленные файлы */}

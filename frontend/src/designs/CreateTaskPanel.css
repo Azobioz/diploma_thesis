@@ -12,6 +12,35 @@
     animation: fadeIn 0.2s ease-out;
 }
 
+.datetime-inputs {
+    display: flex;
+    gap: 10px;
+}
+
+.task-date,
+.task-time {
+    flex: 1;
+    padding: 10px 15px;
+    background-color: transparent;
+    border: 2px solid rgba(255, 255, 255, 0.5);
+    border-radius: 10px;
+    color: #000000;
+    font-size: 16px;
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+.task-date:focus,
+.task-time:focus {
+    border-color: rgba(255, 255, 255, 0.9);
+}
+
+.task-date::-webkit-calendar-picker-indicator,
+.task-time::-webkit-calendar-picker-indicator {
+    filter: invert(0);
+    cursor: pointer;
+}
+
 .create-task-panel {
     background-color: #64A1BA;
     border-radius: 16px;

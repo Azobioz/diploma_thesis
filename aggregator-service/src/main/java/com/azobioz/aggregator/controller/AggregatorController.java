@@ -268,7 +268,7 @@ public class AggregatorController {
 
     // Endpoint для получения досок, где пользователь является участником
     @GetMapping("/spaces/{spaceId}/boards/participant")
-    public ResponseEntity<List<BoardDto>> getParticipantBoards  (
+    public ResponseEntity<List<BoardDto>> getParticipantBoards(
             @PathVariable Long spaceId,
             @AuthenticationPrincipal Jwt jwt) {
 
@@ -278,25 +278,25 @@ public class AggregatorController {
 
         Long userId = Long.valueOf(jwt.getSubject());
 
-        // 1. Получаем ВСЕ доски пространства (ответ — GetBoardsResponse, а не List!)
+        // 1. Получаем ВСЕ доски пространства
+        // Правильный URL: /internal/spaces/{spaceId}/boards
         String boardsUrl = boardServiceUrl + "/internal/spaces/" + spaceId + "/boards";
-
         ResponseEntity<GetBoardsResponse> allBoardsResponse = restTemplate.exchange(
                 boardsUrl,
                 HttpMethod.GET,
                 null,
-                GetBoardsResponse.class  // ← ВАЖНО: GetBoardsResponse, а не List<BoardDto>
+                GetBoardsResponse.class
         );
 
         if (!allBoardsResponse.hasBody() || allBoardsResponse.getBody() == null) {
             return ResponseEntity.ok(Collections.emptyList());
         }
 
-        // Извлекаем список досок из ответа
         List<GetBoardResponse> allBoards = allBoardsResponse.getBody().boards();
 
-        // 2. Получаем список ID досок, где пользователь является участником
-        String userBoardsUrl = boardServiceUrl + "/internal/users/" + userId + "/boards";
+        // 2. ← ИСПРАВЛЕНО: Получаем список ID досок, где пользователь является участником
+        // Правильный URL: /internal/spaces/{spaceId}/boards/users/{userId}/boards
+        String userBoardsUrl = boardServiceUrl + "/internal/spaces/" + spaceId + "/boards/users/" + userId + "/boards";
         ResponseEntity<List<Long>> userBoardIdsResponse = restTemplate.exchange(
                 userBoardsUrl,
                 HttpMethod.GET,
@@ -304,9 +304,8 @@ public class AggregatorController {
                 new ParameterizedTypeReference<List<Long>>() {}
         );
 
-        List<Long> userBoardIdsList = userBoardIdsResponse.getBody();
-        final List<Long> userBoardIds = userBoardIdsList != null
-                ? userBoardIdsList
+        final List<Long> userBoardIds = userBoardIdsResponse.getBody() != null
+                ? userBoardIdsResponse.getBody()
                 : Collections.emptyList();
 
         // 3. Фильтруем и маппим доски в BoardDto
@@ -316,7 +315,7 @@ public class AggregatorController {
                         board.boardId(),
                         board.boardName(),
                         board.boardCreatedByUserId(),
-                        spaceId  // spaceId из path variable
+                        spaceId
                 ))
                 .toList();
 

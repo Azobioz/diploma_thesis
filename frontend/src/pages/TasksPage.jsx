@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+    import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Header from '../components/header/Header';
 import CreateTaskListPanel from "../components/task/CreateTaskListPanel";
@@ -76,6 +76,7 @@ const TasksPage = () => {
                 }
 
                 // 3. Загружаем доски пользователя
+                // Получаем доски, где пользователь участвует (как создатель ИЛИ как участник)
                 if (userId) {
                     try {
                         const token = localStorage.getItem('accessToken');
