@@ -5,6 +5,7 @@ import com.azobioz.task.model.*;
 import com.azobioz.task.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
@@ -81,7 +82,8 @@ public class TaskService {
         return mapToTaskDto(task);
     }
 
-    private TaskDto mapToTaskDto(Task task) {
+    @Transactional(readOnly = true)
+    public TaskDto mapToTaskDto(Task task) {
         List<TaskFileDto> files = taskFileRepository.findByTaskId(task.getId()).stream()
                 .map(f -> new TaskFileDto(
                         f.getFileId(),
@@ -113,6 +115,25 @@ public class TaskService {
         taskRepository.save(task); //сохраняет task и taskAssignee через каскад
 
         return "Task was assignee to user with id " + userId;
+    }
+
+    @Transactional
+    public TaskDto completeTask(Long taskId, Long userId) {
+        Task task = taskRepository.findById(taskId)
+                .orElseThrow(() -> new RuntimeException("Task not found"));
+
+        // Проверяем, что пользователь имеет право отмечать задачу
+        // (создатель задачи или создатель пространства)
+        if (!task.getCreatedByUserId().equals(userId)) {
+            // Здесь можно добавить дополнительную проверку на создателя пространства
+            // через запрос к account-service
+            throw new SecurityException("Only task creator can mark task as completed");
+        }
+
+        task.setIsTaskCompleted(true);
+        taskRepository.save(task);
+
+        return mapToTaskDto(task);
     }
 
     public TaskCommentDto createComment(Long taskId, Long userId, CreateCommentInTaskRequest request) {
@@ -202,6 +223,52 @@ public class TaskService {
     }
 
 //    =============== GET ==================
+
+    @Transactional(readOnly = true)
+    public TaskDetailDto getTaskDetail(Long taskId, Long currentUserId) {
+        Task task = taskRepository.findById(taskId)
+                .orElseThrow(() -> new RuntimeException("Task not found"));
+
+        // Получаем ID исполнителей
+        List<Long> assigneeIds = task.getAssignees().stream()
+                .map(TaskAssignee::getUserId)
+                .toList();
+
+        // Получаем комментарии
+        List<TaskComment> comments = taskCommentRepository.getTaskCommentsByTask(task);
+        List<TaskCommentDto> commentDtos = comments.stream()
+                .map(comment -> new TaskCommentDto(
+                        comment.getId(),
+                        comment.getMessage(),
+                        comment.getCreatedAt(),
+                        comment.getUserId()
+                ))
+                .toList();
+
+        // Получаем прикрепленные файлы
+        List<TaskFileDto> attachedFiles = taskFileRepository.findByTaskId(task.getId()).stream()
+                .map(file -> new TaskFileDto(
+                        file.getFileId(),
+                        file.getFileName(),
+                        file.getFileType(),
+                        Base64.getEncoder().encodeToString(file.getFileData())
+                ))
+                .toList();
+
+        return new TaskDetailDto(
+                task.getId(),
+                task.getTaskName(),
+                task.getTaskDescription(),
+                task.getTaskDeadline(),
+                task.getIsTaskCompleted(),
+                assigneeIds,  // ← ВАЖНО: передаем ID исполнителей
+                commentDtos,
+                task.getCreatedByUserId(),
+                attachedFiles
+        );
+    }
+
+    @Transactional(readOnly = true)
     public TaskDto getTaskById(Long taskId) {
         Task task = taskRepository.findById(taskId).get();
 

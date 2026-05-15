@@ -1,0 +1,435 @@
+.task-detail-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 3000;
+    animation: fadeIn 0.2s ease-out;
+}
+
+.task-detail-panel {
+    background-color: #D9D9D9;
+    border-radius: 20px;
+    padding: 30px;
+    width: 700px;
+    max-width: 90%;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+    animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+}
+
+.task-detail-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 15px;
+}
+
+.task-detail-header i {
+    font-size: 32px;
+    color: #2D2D30;
+}
+
+.task-detail-title {
+    font-size: 24px;
+    color: #000000;
+    margin: 0;
+    font-weight: 600;
+    flex: 1;
+}
+
+.task-detail-divider {
+    height: 3px;
+    background-color: #2D2D30;
+    margin-bottom: 20px;
+    border-radius: 2px;
+}
+
+.task-detail-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 25px;
+    flex-wrap: wrap;
+    gap: 15px;
+}
+
+.task-assignees {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.assignee-avatars {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.assignee-avatar-small {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background-color: #FF6B6B;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: bold;
+    color: white;
+    overflow: hidden;
+    border: 2px solid #D9D9D9;
+    transition: transform 0.2s;
+}
+
+
+.meta-label {
+    font-size: 16px;
+    color: #000000;
+    font-weight: 500;
+}
+
+.assignee-avatars {
+    display: flex;
+    gap: 8px;
+}
+
+.assignee-avatar-small img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.no-assignees {
+    color: #666;
+    font-size: 14px;
+}
+
+.task-deadline-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.deadline-value {
+    font-size: 16px;
+    color: #000000;
+    font-weight: 500;
+}
+
+.task-detail-section {
+    margin-bottom: 30px;
+}
+
+.section-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+.section-header i {
+    font-size: 24px;
+    color: #2D2D30;
+}
+
+.section-header h3 {
+    font-size: 20px;
+    color: #000000;
+    margin: 0;
+    font-weight: 600;
+}
+
+.section-content {
+    background-color: rgba(0, 0, 0, 0.05);
+    border-radius: 12px;
+    padding: 15px;
+}
+
+.task-description {
+    margin: 0;
+    color: #000000;
+    font-size: 15px;
+    line-height: 1.6;
+    white-space: pre-wrap;
+}
+
+/* Файлы */
+.files-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.file-item {
+    background-color: #B8B8B8;
+    border: none;
+    border-radius: 10px;
+    padding: 10px 15px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    color: #000000;
+    font-size: 14px;
+}
+
+.file-item:hover {
+    background-color: #A8A8A8;
+}
+
+.file-item i {
+    font-size: 18px;
+}
+
+/* Комментарии */
+.comments-list {
+    max-height: 300px;
+    overflow-y: auto;
+    margin-bottom: 15px;
+}
+
+.comment-item {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 15px;
+}
+
+.comment-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background-color: #FF6B6B;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: bold;
+    color: white;
+    flex-shrink: 0;
+    overflow: hidden;
+}
+
+.comment-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.comment-content {
+    flex: 1;
+    background-color: rgba(0, 0, 0, 0.05);
+    border-radius: 10px;
+    padding: 10px 12px;
+}
+
+.comment-text {
+    margin: 0 0 5px 0;
+    color: #000000;
+    font-size: 14px;
+    line-height: 1.4;
+}
+
+.comment-date {
+    font-size: 12px;
+    color: #666;
+}
+
+.no-comments {
+    color: #666;
+    font-size: 14px;
+    text-align: center;
+    margin: 20px 0;
+}
+
+.comment-input-wrapper {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+}
+
+.current-user-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background-color: #FF6B6B;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: bold;
+    color: white;
+    flex-shrink: 0;
+}
+
+.current-user-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+
+.comment-input {
+    flex: 1;
+    background-color: rgba(0, 0, 0, 0.1);
+    border: none;
+    border-radius: 10px;
+    padding: 10px 12px;
+    color: #000000;
+    font-size: 14px;
+    resize: none;
+    outline: none;
+    font-family: inherit;
+}
+
+.comment-input::placeholder {
+    color: #666;
+}
+
+.comment-input:focus {
+    background-color: rgba(0, 0, 0, 0.15);
+}
+
+/* Кнопки */
+.task-detail-actions {
+    display: flex;
+    justify-content: center;
+    margin-top: 20px;
+}
+
+.btn-take-task {
+    background-color: #2D2D30;
+    color: white;
+    border: none;
+    border-radius: 12px;
+    padding: 12px 40px;
+    font-size: 16px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.btn-take-task:hover {
+    background-color: #3D3D40;
+}
+
+/* Состояние загрузки кнопки */
+.btn-take-task.loading {
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+
+.btn-take-task:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.btn-complete-task {
+    background-color: #4CAF50; /* Зеленый цвет */
+    color: white;
+    border: none;
+    border-radius: 12px;
+    padding: 12px 30px;
+    font-size: 16px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.task-buttons-group {
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+}
+
+
+.task-completed-badge {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background-color: #4CAF50;
+    color: white;
+    padding: 12px 30px;
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.btn-complete-task:hover:not(:disabled) {
+    background-color: #45a049;
+}
+
+.btn-close-panel {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    background: none;
+    border: none;
+    font-size: 24px;
+    color: #2D2D30;
+    cursor: pointer;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: background-color 0.2s;
+}
+
+.btn-close-panel:hover {
+    background-color: rgba(0, 0, 0, 0.1);
+}
+
+/* Скроллбар */
+.task-detail-panel::-webkit-scrollbar {
+    width: 8px;
+}
+
+.task-detail-panel::-webkit-scrollbar-track {
+    border-radius: 4px;
+    background-color: rgba(0, 0, 0, 0.1);
+}
+
+.task-detail-panel::-webkit-scrollbar-thumb {
+    border-radius: 4px;
+    background-color: #2D2D30;
+}
+
+.comments-list::-webkit-scrollbar {
+    width: 6px;
+}
+
+.comments-list::-webkit-scrollbar-track {
+    border-radius: 3px;
+    background-color: rgba(0, 0, 0, 0.05);
+}
+
+.comments-list::-webkit-scrollbar-thumb {
+    border-radius: 3px;
+    background-color: rgba(0, 0, 0, 0.3);
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px) scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}

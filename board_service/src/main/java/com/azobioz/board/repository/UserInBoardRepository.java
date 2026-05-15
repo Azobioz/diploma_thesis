@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.Collection;
 import java.util.List;
 
 @Repository
@@ -27,4 +28,7 @@ public interface UserInBoardRepository extends JpaRepository<UserInBoard, Long> 
     UserInBoard findByBoardIdAndUserId(Long boardId, Long userId);
 
     List<UserInBoard> findByUserIdAndRole(Long userId, Role role);
+
+
+    List<UserInBoard> getUserInBoardsByUserId(Long userId);
 }

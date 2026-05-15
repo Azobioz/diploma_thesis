@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import Header from '../components/header/Header';
 import CreateTaskListPanel from "../components/task/CreateTaskListPanel";
 import CreateTaskPanel from "../components/task/CreateTaskPanel";
+import TaskDetailPanel from "../components/task/TaskDetailPanel";
 
 const TasksPage = () => {
     const { spaceId, boardId } = useParams();
@@ -16,6 +17,11 @@ const TasksPage = () => {
     const [isCreateTaskPanelOpen, setIsCreateTaskPanelOpen] = useState(false);
     const [selectedListId, setSelectedListId] = useState(null);
     const dropdownRef = useRef(null);
+
+    // Состояния для задачи
+    const [selectedTask, setSelectedTask] = useState(null);
+    const [isTaskDetailOpen, setIsTaskDetailOpen] = useState(false);
+
     const [currentUserId, setCurrentUserId] = useState(null);
     const [isSpaceCreator, setIsSpaceCreator] = useState(false);
 
@@ -42,7 +48,7 @@ const TasksPage = () => {
                     return;
                 }
 
-                // Получаем данные страницы задач
+                // 1. Загружаем данные страницы задач
                 const response = await fetch(`http://localhost:8081/boardiox/spaces/${spaceId}/boards/${boardId}/tasks`, {
                     headers: {
                         'Authorization': `Bearer ${token}`,
@@ -52,19 +58,12 @@ const TasksPage = () => {
 
                 if (response.ok) {
                     const data = await response.json();
-
-                    data.tasks?.forEach(list => {
-                        list.tasks?.forEach(task => {
-                            console.log('Task creator:', task.createByUserAvatar);
-                        });
-                    });
-
                     setTasksData(data);
+                    // Проверка на создателя пространства
                     setIsSpaceCreator(data.currentUser?.userId === data.spaceCreator?.userId);
-
                 }
 
-                // Получаем ВСЕ доски пространства
+                // 2. Загружаем все доски
                 const allBoardsResponse = await fetch(`http://localhost:8081/boardiox/spaces/${spaceId}/boards`, {
                     headers: {
                         'Authorization': `Bearer ${token}`,
@@ -76,20 +75,55 @@ const TasksPage = () => {
                     setAllSpaceBoards(data.boards || []);
                 }
 
-                // Получаем доски, где пользователь участвует
+                // 3. Загружаем доски пользователя
                 if (userId) {
-                    const userBoardsResponse = await fetch(`http://localhost:8081/boardiox/users/${userId}/created-boards`, {
-                        headers: {
-                            'Authorization': `Bearer ${token}`,
-                            'Content-Type': 'application/json',
-                        },
-                    });
-                    if (userBoardsResponse.ok) {
-                        const data = await userBoardsResponse.json();
-                        const boardsInCurrentSpace = data.filter(board =>
-                            board.spaceId === Number(spaceId)
-                        );
+                    try {
+                        const token = localStorage.getItem('accessToken');
+
+                        // 1. Загружаем доски, где пользователь создатель
+                        const createdBoardsResponse = await fetch(`http://localhost:8081/boardiox/users/${userId}/created-boards`, {
+                            headers: {
+                                'Authorization': `Bearer ${token}`,
+                                'Content-Type': 'application/json',
+                            },
+                        });
+
+                        let boardsInCurrentSpace = [];
+
+                        if (createdBoardsResponse.ok) {
+                            const createdBoards = await createdBoardsResponse.json();
+                            boardsInCurrentSpace = createdBoards.filter(board =>
+                                board.spaceId === Number(spaceId)
+                            );
+                        }
+
+                        // 2. Загружаем доски, где пользователь участник (не создатель)
+                        const participantBoardsResponse = await fetch(`http://localhost:8081/boardiox/spaces/${spaceId}/boards/participant`, {
+                            headers: {
+                                'Authorization': `Bearer ${token}`,
+                                'Content-Type': 'application/json',
+                            },
+                        });
+
+                        if (participantBoardsResponse.ok) {
+                            const participantBoards = await participantBoardsResponse.json();
+                            // Фильтруем только доски из текущего пространства
+                            const participantBoardsInSpace = participantBoards.filter(board =>
+                                board.spaceId === Number(spaceId)
+                            );
+
+                            // Объединяем с досками-создателями (убираем дубликаты)
+                            const existingBoardIds = new Set(boardsInCurrentSpace.map(b => b.boardId));
+                            participantBoardsInSpace.forEach(board => {
+                                if (!existingBoardIds.has(board.boardId)) {
+                                    boardsInCurrentSpace.push(board);
+                                }
+                            });
+                        }
+
                         setUserBoards(boardsInCurrentSpace);
+                    } catch (err) {
+                        console.error("Error fetching user boards:", err);
                     }
                 }
 
@@ -111,10 +145,29 @@ const TasksPage = () => {
         setShowBoardDropdown(false);
     };
 
+    const handleTaskClick = async (taskId) => {
+        setIsTaskDetailOpen(true);
+        setSelectedTask(null);
+        try {
+            const token = localStorage.getItem('accessToken');
+            const response = await fetch(`http://localhost:8081/boardiox/spaces/${spaceId}/boards/${boardId}/tasks/${taskId}`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                },
+            });
+            if (response.ok) {
+                const fullTaskData = await response.json();
+                setSelectedTask(fullTaskData);
+            }
+        } catch (err) {
+            console.error("Error fetching task details:", err);
+        }
+    };
+
     const handleCreateTaskList = async ({ listName }) => {
         try {
             const token = localStorage.getItem('accessToken');
-
             const response = await fetch(`http://localhost:8081/boardiox/${boardId}/tasklists/create`, {
                 method: 'POST',
                 headers: {
@@ -129,13 +182,10 @@ const TasksPage = () => {
 
             if (response.ok) {
                 const newList = await response.json();
-
-                // Реактивно добавляем новый список в состояние
                 setTasksData(prev => ({
                     ...prev,
                     tasks: [...(prev.tasks || []), newList]
                 }));
-
                 setIsCreateListPanelOpen(false);
             } else {
                 const errorData = await response.json();
@@ -179,17 +229,24 @@ const TasksPage = () => {
 
             if (response.ok) {
                 const newTask = await response.json();
+                // Реактивно добавляем задачу с данными создателя
+                const taskWithCreator = {
+                    ...newTask,
+                    createByUserAvatar: {
+                        userId: Number(userId),
+                        nickname: tasksData.currentUser?.nickname || 'User',
+                        avatar: tasksData.currentUser?.avatar
+                    }
+                };
 
-                // Реактивно добавляем задачу
                 setTasksData(prev => ({
                     ...prev,
                     tasks: (prev.tasks || []).map(list =>
                         list.taskListId === selectedListId
-                            ? { ...list, tasks: [...(list.tasks || []), newTask] }
+                            ? { ...list, tasks: [...(list.tasks || []), taskWithCreator] }
                             : list
                     )
                 }));
-
                 setIsCreateTaskPanelOpen(false);
             } else {
                 const errorData = await response.json();
@@ -209,25 +266,6 @@ const TasksPage = () => {
         return <div className="tasks-error">Не удалось загрузить данные</div>;
     }
 
-    const updateTaskAvatars = (tasksData) => {
-        if (!tasksData || !tasksData.tasks) return tasksData;
-
-        // Получаем всех уникальных пользователей из задач
-        const userIds = new Set();
-        tasksData.tasks.forEach(list => {
-            list.tasks?.forEach(task => {
-                if (task.createByUserAvatar?.userId) {
-                    userIds.add(task.createByUserAvatar.userId);
-                }
-            });
-        });
-
-        // Если есть пользователи, обновляем их данные
-        if (userIds.size === 0) return tasksData;
-
-        return tasksData;
-    };
-
     return (
         <div className="tasks-page">
             <Header
@@ -236,7 +274,7 @@ const TasksPage = () => {
                 showInvite={false}
                 showNotifications={false}
                 showProfile={true}
-                currentUserId={tasksData.currentUser?.userId}
+                currentUserId={currentUserId}
                 currentUserAvatar={tasksData.currentUser?.avatar}
                 currentUserName={tasksData.currentUser?.nickname}
                 notificationCount={0}
@@ -248,7 +286,6 @@ const TasksPage = () => {
 
                 <div className="tasks-board-title">
                     <span>Задачи </span>
-
                     <div className="board-dropdown-wrapper" ref={dropdownRef}>
                         <button
                             className="board-dropdown-button"
@@ -279,7 +316,6 @@ const TasksPage = () => {
                 </div>
 
                 <div className="task-lists-container">
-                    {/* Списки задач */}
                     {tasksData.tasks.map(list => (
                         <div key={list.taskListId} className="task-list">
                             <div className="task-list-header">
@@ -291,7 +327,12 @@ const TasksPage = () => {
 
                             <div className="task-cards">
                                 {(list.tasks || []).map(task => (
-                                    <div key={task.taskId} className="task-card">
+                                    <div
+                                        key={task.taskId}
+                                        className={`task-card ${task.isTaskCompleted ? 'task-card-completed' : ''}`}
+                                        onClick={() => handleTaskClick(task.taskId)}
+                                        style={{ cursor: 'pointer' }}
+                                    >
                                         <p className="task-title">{task.taskName}</p>
                                         <div className="task-footer">
                                             {task.deadline && (
@@ -303,19 +344,22 @@ const TasksPage = () => {
                                                     })}
                                                 </span>
                                             )}
-                                            {task.createByUserAvatar && (
-                                                <div className="task-creator-avatar-in-task-card">
-                                                    {task.createByUserAvatar.avatar ? (
-                                                        <img
-                                                            src={`data:image/png;base64,${task.createByUserAvatar.avatar}`}
-                                                            alt={task.createByUserAvatar.nickname || 'Creator'}
-                                                        />
-                                                    ) : (
-                                                        <span className="avatar-initials">
-                                                            {(task.createByUserAvatar.nickname || task.createByUserAvatar.email?.split('@')[0] || 'U').charAt(0).toUpperCase()}
-                                                        </span>
-                                                    )}
+
+                                            {/* Если задача выполнена, показываем галочку вместо аватарки создателя */}
+                                            {task.isTaskCompleted ? (
+                                                <div className="task-completed-icon">
+                                                    <i className="bi bi-check-circle-fill"></i>
                                                 </div>
+                                            ) : (
+                                                task.createByUserAvatar && (
+                                                    <div className="task-creator-avatar-in-task-card">
+                                                        {task.createByUserAvatar.avatar ? (
+                                                            <img src={`data:image/png;base64,${task.createByUserAvatar.avatar}`} alt="Creator" />
+                                                        ) : (
+                                                            <span>{(task.createByUserAvatar.nickname || '?').charAt(0).toUpperCase()}</span>
+                                                        )}
+                                                    </div>
+                                                )
                                             )}
                                         </div>
                                     </div>
@@ -332,7 +376,6 @@ const TasksPage = () => {
                         </div>
                     ))}
 
-                    {/* ← КНОПКА СОЗДАНИЯ СПИСКА - всегда видна */}
                     <button
                         className="create-list-btn"
                         onClick={() => setIsCreateListPanelOpen(true)}
@@ -343,7 +386,6 @@ const TasksPage = () => {
                 </div>
             </div>
 
-            {/* ← ПАНЕЛЬ СОЗДАНИЯ СПИСКА */}
             <CreateTaskListPanel
                 isOpen={isCreateListPanelOpen}
                 onClose={() => setIsCreateListPanelOpen(false)}
@@ -356,6 +398,30 @@ const TasksPage = () => {
                 onClose={() => setIsCreateTaskPanelOpen(false)}
                 onSubmit={handleCreateTaskSubmit}
                 taskListId={selectedListId}
+            />
+
+            <TaskDetailPanel
+                isOpen={isTaskDetailOpen}
+                onClose={() => setIsTaskDetailOpen(false)}
+                task={selectedTask}
+                currentUserId={currentUserId}
+                currentUserNickname={tasksData.currentUser?.nickname}
+                currentUserAvatar={tasksData.currentUser?.avatar}
+                spaceId={spaceId}
+                boardId={boardId}
+                spaceCreatorId={tasksData.spaceCreator?.userId} // ← ЭТО ОБЯЗАТЕЛЬНО!
+                onTaskUpdated={(updatedTask) => {
+                    setSelectedTask(updatedTask);
+                    setTasksData(prev => ({
+                        ...prev,
+                        tasks: prev.tasks.map(list => ({
+                            ...list,
+                            tasks: list.tasks.map(t =>
+                                t.taskId === updatedTask.taskId ? updatedTask : t
+                            )
+                        }))
+                    }));
+                }}
             />
         </div>
     );

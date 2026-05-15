@@ -1,4 +1,4 @@
-package com.azobioz.aggregator.dto.fullpage;
+package com.azobioz.aggregator.dto.page;
 
 import com.azobioz.aggregator.dto.board.BoardDto;
 import com.azobioz.aggregator.dto.board.SpaceDto;

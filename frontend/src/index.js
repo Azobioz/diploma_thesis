@@ -21,6 +21,7 @@ import './designs/ProfilePage.css'
 import './designs/TasksPage.css';
 import './designs/CreateTaskListPanel.css'
 import './designs/CreateTaskPanel.css'
+import './designs/TaskDetailPanel.css'
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(

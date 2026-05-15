@@ -2,9 +2,9 @@ package com.azobioz.aggregator.controller;
 
 import com.azobioz.aggregator.dto.board.*;
 import com.azobioz.aggregator.dto.board.element.*;
-import com.azobioz.aggregator.dto.fullpage.SpaceMainPageDto;
-import com.azobioz.aggregator.dto.fullpage.TaskMiniPageDto;
-import com.azobioz.aggregator.dto.fullpage.TasksPageDto;
+import com.azobioz.aggregator.dto.page.SpaceMainPageDto;
+import com.azobioz.aggregator.dto.page.TaskMiniPageDto;
+import com.azobioz.aggregator.dto.page.TasksPageDto;
 import com.azobioz.aggregator.dto.invite.CreateBoardInvitationRequest;
 import com.azobioz.aggregator.dto.invite.CreateInvitationRequest;
 import com.azobioz.aggregator.dto.invite.InvitationLinkResponse;
@@ -108,56 +108,75 @@ public class AggregatorController {
         );
     }
 
-    @GetMapping("/boards/{boardId}/tasks/{taskId}")
-    public TaskMiniPageDto getTaskMiniPage(@PathVariable("taskId") Long taskId) {
+    @GetMapping("/spaces/{spaceId}/boards/{boardId}/tasks/{taskId}")
+    public ResponseEntity<TaskMiniPageDto> getTaskDetail(
+            @PathVariable Long spaceId,
+            @PathVariable Long boardId,
+            @PathVariable Long taskId,
+            @AuthenticationPrincipal Jwt jwt) {
 
-        GetTaskAndUsersWhichDoingTaskAndCreatedByResponse task = getTask(taskId);
+        if (jwt == null) {
+            return ResponseEntity.status(401).build();
+        }
 
-        List<UserAvatarDto> usersDoingTask = task.usersAssigneeToTask()
-                .stream()
-                .map(userDto -> new UserAvatarDto(userDto.getUserId(), userDto.getNickname(), userDto.getAvatar()))
+        Long userId = Long.valueOf(jwt.getSubject());
+
+        // 1. Получаем задачу из task-service
+        String taskUrl = taskServiceUrl + "/internal/tasks/" + taskId + "/detail";
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("X-User-Id", userId.toString());
+        HttpEntity<Void> entity = new HttpEntity<>(headers);
+
+        ResponseEntity<TaskDetail> taskResponse = restTemplate.exchange(
+                taskUrl, HttpMethod.GET, entity, TaskDetail.class);
+        TaskDetail taskFromService = taskResponse.getBody();
+
+        // 2. Aggregator получает данные пользователей из account-service
+        Set<Long> allUserIds = new HashSet<>();
+        allUserIds.addAll(taskFromService.usersWhichDoingTaskIds());
+        taskFromService.taskComments().forEach(comment ->
+                allUserIds.add(comment.commentCreatedByUserId()));
+        allUserIds.add(taskFromService.createdByUserId());
+
+        List<UserInfoDto> usersInfo = getUsersByIds(new ArrayList<>(allUserIds)).getBody();
+        Map<Long, UserInfoDto> userMap = usersInfo.stream()
+                .collect(Collectors.toMap(UserInfoDto::getUserId, Function.identity()));
+
+        // 3. Преобразуем ID в UserAvatarDto
+        List<UserAvatarDto> assignees = taskFromService.usersWhichDoingTaskIds().stream()
+                .map(id -> {
+                    UserInfoDto user = userMap.get(id);
+                    return new UserAvatarDto(user.getUserId(), user.getNickname(), user.getAvatar());
+                })
                 .toList();
 
-        List<TaskCommentDto> comments = getCommentsFromTask(taskId).comments();
-
-        List<Long> commentAuthorsIds = comments
-                .stream()
-                .map(TaskCommentDto::commentCreatedByUserId)
-                .distinct()
-                .toList();
-
-        List<UserInfoDto> authorsInfo = getUsersByIds(commentAuthorsIds).getBody();
-
-        // Создаём Map для быстрого поиска пользователя по boardId
-        Map<Long, UserDto> userMap = authorsInfo.stream()
-                .map(userInfo -> new UserDto(
-                        userInfo.getUserId(),
-                        userInfo.getNickname(),
-                        userInfo.getAvatar()
-                ))
-                .collect(Collectors.toMap(UserDto::getUserId, Function.identity()));
-
-        List<FullTaskCommentDto> fullComments = comments.stream()
+        // 4. Преобразуем комментарии с полными данными пользователей
+        List<FullTaskCommentDto> fullComments = taskFromService.taskComments().stream()
                 .map(comment -> {
-                    UserDto author = userMap.get(comment.commentCreatedByUserId());
+                    UserInfoDto author = userMap.get(comment.commentCreatedByUserId());
                     return new FullTaskCommentDto(
                             comment.taskCommentId(),
                             comment.message(),
                             comment.createdAt(),
-                            author
+                            new UserDto(author.getUserId(), author.getNickname(), author.getAvatar())
                     );
                 })
                 .toList();
 
-        return new TaskMiniPageDto(
-                task.taskId(),
-                task.taskName(),
-                task.taskDescription(),
-                task.deadline(),
-                task.isTaskCompleted(),
-                usersDoingTask,
-                fullComments
+        // 5. Создаем финальный DTO для фронтенда (включая файлы!)
+        TaskMiniPageDto finalResponse = new TaskMiniPageDto(
+                taskFromService.taskId(),
+                taskFromService.taskName(),
+                taskFromService.taskDescription(),
+                taskFromService.deadline(),
+                taskFromService.isTaskCompleted(),
+                assignees,
+                fullComments,
+                taskFromService.attachedFiles(),
+                taskFromService.createdByUserId()
         );
+
+        return ResponseEntity.ok(finalResponse);
     }
 
 
@@ -245,6 +264,63 @@ public class AggregatorController {
         );
 
         return ResponseEntity.status(response.getStatusCode()).body(response.getBody());
+    }
+
+    // Endpoint для получения досок, где пользователь является участником
+    @GetMapping("/spaces/{spaceId}/boards/participant")
+    public ResponseEntity<List<BoardDto>> getParticipantBoards  (
+            @PathVariable Long spaceId,
+            @AuthenticationPrincipal Jwt jwt) {
+
+        if (jwt == null) {
+            return ResponseEntity.status(401).build();
+        }
+
+        Long userId = Long.valueOf(jwt.getSubject());
+
+        // 1. Получаем ВСЕ доски пространства (ответ — GetBoardsResponse, а не List!)
+        String boardsUrl = boardServiceUrl + "/internal/spaces/" + spaceId + "/boards";
+
+        ResponseEntity<GetBoardsResponse> allBoardsResponse = restTemplate.exchange(
+                boardsUrl,
+                HttpMethod.GET,
+                null,
+                GetBoardsResponse.class  // ← ВАЖНО: GetBoardsResponse, а не List<BoardDto>
+        );
+
+        if (!allBoardsResponse.hasBody() || allBoardsResponse.getBody() == null) {
+            return ResponseEntity.ok(Collections.emptyList());
+        }
+
+        // Извлекаем список досок из ответа
+        List<GetBoardResponse> allBoards = allBoardsResponse.getBody().boards();
+
+        // 2. Получаем список ID досок, где пользователь является участником
+        String userBoardsUrl = boardServiceUrl + "/internal/users/" + userId + "/boards";
+        ResponseEntity<List<Long>> userBoardIdsResponse = restTemplate.exchange(
+                userBoardsUrl,
+                HttpMethod.GET,
+                null,
+                new ParameterizedTypeReference<List<Long>>() {}
+        );
+
+        List<Long> userBoardIdsList = userBoardIdsResponse.getBody();
+        final List<Long> userBoardIds = userBoardIdsList != null
+                ? userBoardIdsList
+                : Collections.emptyList();
+
+        // 3. Фильтруем и маппим доски в BoardDto
+        List<BoardDto> participantBoards = allBoards.stream()
+                .filter(board -> userBoardIds.contains(board.boardId()))
+                .map(board -> new BoardDto(
+                        board.boardId(),
+                        board.boardName(),
+                        board.boardCreatedByUserId(),
+                        spaceId  // spaceId из path variable
+                ))
+                .toList();
+
+        return ResponseEntity.ok(participantBoards);
     }
 
     @GetMapping("/spaces/{spaceId}/users")
@@ -953,6 +1029,25 @@ public ResponseEntity<Void> deleteSpace(
         );
     }
 
+    @PostMapping("/tasks/{taskId}/complete")
+    public ResponseEntity<TaskMiniPageDto> completeTask(
+            @PathVariable Long taskId,
+            @AuthenticationPrincipal Jwt jwt) {
+
+        if (jwt == null) {
+            return ResponseEntity.status(401).build();
+        }
+
+        Long userId = Long.valueOf(jwt.getSubject());
+        String url = taskServiceUrl + "/internal/tasks/" + taskId + "/complete";
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("X-User-Id", userId.toString());
+        HttpEntity<Void> entity = new HttpEntity<>(headers);
+
+        return restTemplate.exchange(url, HttpMethod.POST, entity, TaskMiniPageDto.class);
+    }
+
     @PostMapping("/tasks/{taskId}/comments/create")
     public FullTaskCommentDto createCommentInTask(@PathVariable("taskId") Long taskId,
                                     @AuthenticationPrincipal Jwt jwt,
@@ -994,6 +1089,8 @@ public ResponseEntity<Void> deleteSpace(
     }
 
     // ====================== Task Get ======================
+
+
 
     public GetTaskAndUsersWhichDoingTaskAndCreatedByResponse getTask(Long taskId) {
         String url = taskServiceUrl + "/internal/tasks/" + taskId;
@@ -1113,6 +1210,8 @@ public ResponseEntity<Void> deleteSpace(
         }
         return null;
     }
+
+
 
 
 

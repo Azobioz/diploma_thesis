@@ -1,4 +1,4 @@
-package com.azobioz.aggregator.dto.fullpage;
+package com.azobioz.aggregator.dto.page;
 
 import com.azobioz.aggregator.dto.task.TaskListDto;
 import com.azobioz.aggregator.dto.user.UserDto;

@@ -5,6 +5,7 @@ import com.azobioz.board.dto.*;
 import com.azobioz.board.dto.invite.InvitationLinkResponse;
 import com.azobioz.board.service.BoardService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -58,6 +59,11 @@ public class BoardController {
     @GetMapping("/users/{userId}/created-boards")
     public List<BoardDto> getUserCreatedBoards(@PathVariable("userId") Long userId) {
         return boardService.getBoardsCreatedByUser(userId);
+    }
+
+    @GetMapping("/users/{userId}/boards")
+    public ResponseEntity<List<Long>> getUserBoardIds(@PathVariable Long userId) {
+        return ResponseEntity.ok(boardService.getUserBoardIds(userId));
     }
 
     //================ PUT ========================

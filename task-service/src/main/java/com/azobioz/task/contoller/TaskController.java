@@ -43,6 +43,13 @@ public class TaskController {
         return taskService.takeTaskToExecution(taskId, userId);
     }
 
+    @PostMapping("/tasks/{taskId}/complete")
+    public ResponseEntity<TaskDto> completeTask(
+            @PathVariable Long taskId,
+            @RequestHeader("X-User-Id") Long userId) {
+        return ResponseEntity.ok(taskService.completeTask(taskId, userId));
+    }
+
     @PostMapping("/tasks/{taskId}/comments/create")
     public TaskCommentDto createComment(@PathVariable("taskId") Long taskId,
                                         @RequestHeader("X-User-Id") Long userId,
@@ -103,6 +110,13 @@ public class TaskController {
     @GetMapping("/{boardId}/tasklists")
     public GetShortTaskListsAndTasksFromBoardResponse getAllTaskListsAndTasks(@PathVariable("boardId") Long boardId) {
         return taskService.getAllShortTaskListsAndTasks(boardId);
+    }
+
+    @GetMapping("/tasks/{taskId}/detail")
+    public ResponseEntity<TaskDetailDto> getTaskMiniPage(
+            @PathVariable("taskId") Long taskId,
+            @RequestHeader("X-User-Id") Long userId) {
+        return ResponseEntity.ok(taskService.getTaskDetail(taskId, userId));
     }
 
 }

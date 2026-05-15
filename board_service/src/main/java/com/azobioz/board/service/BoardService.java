@@ -26,8 +26,6 @@ public class BoardService {
     private final UserInBoardRepository userInBoardRepository;
     private final InvitationRepository invitationRepository;
 
-//    private final String frontendBaseUrl = "http://localhost:3000";
-
     public CreateBoardResponse createBoard(BoardRequest request, Long spaceId, Long boardCreatorUserId) {
         Space space = spaceRepository.findById(spaceId).orElseThrow(() -> new RuntimeException("Space not found with spaceId: " + spaceId));
 
@@ -71,6 +69,13 @@ public class BoardService {
                 board.getName(),
                 userIdsAndRolesInBoardDto
         );
+    }
+
+    public List<Long> getUserBoardIds(Long userId) {
+        // Возвращает список ID досок, где пользователь является участником
+        return userInBoardRepository.getUserInBoardsByUserId(userId).stream()
+                .map(userInBoard -> userInBoard.getBoard().getId())
+                .toList();
     }
 
     public GetBoardResponse getBoard(Long boardId) {

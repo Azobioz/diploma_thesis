@@ -24,6 +24,36 @@
     min-width: 200px;
 }
 
+.task-card-completed {
+    background-color: #4CAF50 !important; /* Зеленый фон */
+}
+
+.task-card-completed .task-title {
+    color: white;
+    text-decoration: line-through; /* Зачеркнутый текст */
+    opacity: 0.9;
+}
+
+.task-card-completed .task-deadline {
+    background-color: rgba(255, 255, 255, 0.2);
+    color: white;
+}
+
+/* Иконка галочки */
+.task-completed-icon {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background-color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #4CAF50;
+    font-size: 18px;
+    font-weight: bold;
+    flex-shrink: 0;
+}
+
 .board-dropdown-button:hover {
     background-color: #3D3D40;
 }
@@ -263,6 +293,7 @@
     word-wrap: break-word;
     /*text-align: center;*/
     top: 10px;
+    cursor: pointer;
 }
 
 .task-footer {
