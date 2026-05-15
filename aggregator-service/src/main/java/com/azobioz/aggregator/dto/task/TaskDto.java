@@ -7,5 +7,6 @@ import java.time.LocalDateTime;
 public record TaskDto(Long taskId,
                       String taskName,
                       LocalDateTime deadline,
+                      Boolean isTaskCompleted,
                       UserAvatarDto createByUserAvatar) {
 }

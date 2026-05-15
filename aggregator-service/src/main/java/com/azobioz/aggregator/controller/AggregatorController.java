@@ -1196,6 +1196,7 @@ public ResponseEntity<Void> deleteSpace(
                                                     task.taskId(),
                                                     task.taskName(),
                                                     task.deadline(),
+                                                    task.
                                                     new UserAvatarDto(user.getUserId(), user.getNickname(), user.getAvatar())
                                             );
                                         })
