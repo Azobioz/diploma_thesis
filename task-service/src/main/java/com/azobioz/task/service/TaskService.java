@@ -186,6 +186,24 @@ public class TaskService {
         return "Task with id " +  taskId + " was updated";
     }
 
+    @Transactional
+    public void moveTask(Long taskId, Long targetTaskListId) {
+        Task task = taskRepository.findById(taskId)
+                .orElseThrow(() -> new RuntimeException("Task not found"));
+
+        TaskList targetList = taskListRepository.findById(targetTaskListId)
+                .orElseThrow(() -> new RuntimeException("TaskList not found"));
+
+        // Проверяем, что списки принадлежат одной доске
+        if (!task.getTaskList().getBoardId().equals(targetList.getBoardId())) {
+            throw new IllegalArgumentException("Cannot move task to list in different board");
+        }
+
+        // Перемещаем задачу
+        task.setTaskList(targetList);
+        taskRepository.save(task);
+    }
+
 //    =============== DELETE ==================
     public String deleteTaskList(Long taskListId) {
         TaskList taskList = taskListRepository.findById(taskListId).get();
@@ -328,6 +346,7 @@ public class TaskService {
                                                 task.getId(),
                                                 task.getTaskName(),
                                                 task.getTaskDeadline(),
+                                                task.getIsTaskCompleted(),
                                                 task.getCreatedByUserId()
                                                 )).toList()
                                 )).toList()

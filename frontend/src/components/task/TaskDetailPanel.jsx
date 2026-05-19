@@ -9,18 +9,18 @@ const TaskDetailPanel = ({
                              currentUserAvatar,
                              spaceId,
                              boardId,
-                             spaceCreatorId, // ← ДОБАВЛЕНО: ID создателя пространства
+                             spaceCreatorId,
                              onTaskUpdated
                          }) => {
     const [commentText, setCommentText] = useState('');
     const [assignees, setAssignees] = useState(task?.assignees || []);
     const [isTaskCompleted, setIsTaskCompleted] = useState(task?.isTaskCompleted || false);
+    const [comments, setComments] = useState(task?.comments || []);
     const panelRef = useRef(null);
     const [isUpdating, setIsUpdating] = useState(false);
+    const [isSubmittingComment, setIsSubmittingComment] = useState(false);
 
     // Определяем, может ли пользователь отметить задачу как выполненную
-    // (Создатель задачи ИЛИ Создатель пространства)
-    // Используем Number() для корректного сравнения ID
     const canMarkAsCompleted = currentUserId && task && (
         Number(currentUserId) === Number(task?.createdByUserId) ||
         Number(currentUserId) === Number(spaceCreatorId)
@@ -31,9 +31,11 @@ const TaskDetailPanel = ({
         if (task) {
             setAssignees(task.assignees || []);
             setIsTaskCompleted(task.isTaskCompleted || false);
+            setComments(task.taskComments);
         } else {
             setAssignees([]);
             setIsTaskCompleted(false);
+            setComments([]);
         }
     }, [task]);
 
@@ -124,7 +126,6 @@ const TaskDetailPanel = ({
             });
 
             if (response.ok) {
-                // Запрашиваем актуальные данные задачи
                 const updatedTaskResponse = await fetch(
                     `http://localhost:8081/boardiox/spaces/${spaceId}/boards/${boardId}/tasks/${task.taskId}`,
                     {
@@ -154,7 +155,6 @@ const TaskDetailPanel = ({
         }
     };
 
-    // ← НОВЫЙ МЕТОД: Отметить задачу как выполненную
     const handleMarkAsCompleted = async () => {
         if (isUpdating) return;
         setIsUpdating(true);
@@ -171,7 +171,6 @@ const TaskDetailPanel = ({
             });
 
             if (response.ok) {
-                // Запрашиваем актуальные данные задачи
                 const updatedTaskResponse = await fetch(
                     `http://localhost:8081/boardiox/spaces/${spaceId}/boards/${boardId}/tasks/${task.taskId}`,
                     {
@@ -201,6 +200,69 @@ const TaskDetailPanel = ({
         }
     };
 
+    const handleCreateComment = async () => {
+        if (!commentText.trim() || isSubmittingComment) return;
+
+        setIsSubmittingComment(true);
+
+        try {
+            const token = localStorage.getItem('accessToken');
+
+            const response = await fetch(`http://localhost:8081/boardiox/tasks/${task.taskId}/comments/create`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    message: commentText.trim()
+                }),
+            });
+
+            if (response.ok) {
+                // Получаем созданный комментарий с сервера
+                const newComment = await response.json();
+                console.log("newComment", newComment)
+                // ← ВАЖНО: Проверяем структуру комментария
+                // Если сервер вернул commentCreatedByUser, используем его
+                // Иначе создаем author из текущих данных
+                const commentWithAuthor =  newComment.commentCreatedByUser
+                    ? newComment
+                    : {
+                        ...newComment,
+                        author: {
+                            userId: Number(currentUserId),
+                            nickname: currentUserNickname,
+                            avatar: currentUserAvatar
+                        }
+                    };
+
+                // Реактивно добавляем комментарий в список
+                const updatedComments = [...comments, commentWithAuthor];
+                setComments(updatedComments);
+
+                // Очищаем поле ввода
+                setCommentText('');
+
+
+            } else {
+                const errorData = await response.json().catch(() => ({}));
+                alert(`Ошибка: ${errorData.message || 'Не удалось создать комментарий'}`);
+            }
+        } catch (err) {
+            console.error('Error creating comment:', err);
+            alert('Ошибка при создании комментария');
+        } finally {
+            setIsSubmittingComment(false);
+        }
+    };
+
+    const handleCommentKeyDown = (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            handleCreateComment();
+        }
+    };
     return (
         <div className="task-detail-overlay">
             <div className="task-detail-panel" ref={panelRef}>
@@ -290,19 +352,26 @@ const TaskDetailPanel = ({
                     </div>
                     <div className="comments-wrapper">
                         <div className="comments-list">
-                            {task.comments && task.comments.length > 0 ? (
-                                task.comments.map((comment, index) => (
+                            {comments && comments.length > 0 ? (
+                                comments.map((comment, index) => (
                                     <div key={index} className="comment-item">
                                         <div className="comment-avatar">
-                                            {comment.author?.avatar ? (
-                                                <img src={`data:image/png;base64,${comment.author.avatar}`} alt={comment.author.nickname} />
+                                            {comment.author?.avatar || comment.commentCreatedByUser?.avatar ? (
+                                                <img
+                                                    src={`data:image/png;base64,${comment.author?.avatar || comment.commentCreatedByUser?.avatar}`}
+                                                    alt={comment.author?.nickname || comment.commentCreatedByUser?.nickname}
+                                                />
                                             ) : (
-                                                <span>{(comment.author?.nickname || '?').charAt(0).toUpperCase()}</span>
+                                                <span>
+                                                {(comment.author?.nickname || comment.commentCreatedByUser?.nickname || '?').charAt(0).toUpperCase()}
+                                              </span>
                                             )}
                                         </div>
                                         <div className="comment-content">
                                             <div className="comment-header">
-                                                <span className="comment-author">{comment.author?.nickname || 'User'}</span>
+                                              <span className="comment-author">
+                                                {comment.author?.nickname || comment.commentCreatedByUser?.nickname || 'User'}
+                                              </span>
                                                 <span className="comment-date">{formatDate(comment.createdAt)}</span>
                                             </div>
                                             <p className="comment-text">{comment.message}</p>
@@ -310,12 +379,11 @@ const TaskDetailPanel = ({
                                     </div>
                                 ))
                             ) : (
-                                <div className="no-comments-placeholder">
-                                    Пока нет комментариев
-                                </div>
+                                <div className="no-comments-placeholder">Пока нет комментариев</div>
                             )}
                         </div>
 
+                        {/* Поле ввода комментария */}
                         <div className="comment-input-wrapper">
                             <div className="current-user-avatar">
                                 {currentUserAvatar ? (
@@ -329,8 +397,17 @@ const TaskDetailPanel = ({
                                 placeholder="Напишите комментарий..."
                                 value={commentText}
                                 onChange={(e) => setCommentText(e.target.value)}
-                                rows={1}
+                                onKeyDown={handleCommentKeyDown}
+                                rows={2}
+                                disabled={isSubmittingComment}
                             />
+                            <button
+                                className="comment-submit-btn"
+                                onClick={handleCreateComment}
+                                disabled={!commentText.trim() || isSubmittingComment}
+                            >
+                                {isSubmittingComment ? '⏳' : 'Отправить'}
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -338,30 +415,27 @@ const TaskDetailPanel = ({
                 {/* Кнопки действий */}
                 <div className="task-detail-actions">
                     {isTaskCompleted ? (
-                        // ← Если задача выполнена, показываем только текст
                         <div className="task-completed-badge">
                             <i className="bi bi-check-circle-fill"></i>
                             Задача выполнена
                         </div>
                     ) : (
-                        // ← Если задача не выполнена, показываем кнопки
                         <div className="task-buttons-group">
                             <button
                                 className={`btn-take-task ${isUpdating ? 'loading' : ''}`}
                                 onClick={handleTakeTask}
                                 disabled={isUpdating}
                             >
-                                {isUpdating ? 'Загрузка' : 'Взять задачу'}
+                                {isUpdating ? '⏳' : 'Взять задачу'}
                             </button>
 
-                            {/* Кнопка "Отметить выполненной" только для создателя задачи или пространства */}
                             {canMarkAsCompleted && (
                                 <button
                                     className={`btn-complete-task ${isUpdating ? 'loading' : ''}`}
                                     onClick={handleMarkAsCompleted}
                                     disabled={isUpdating}
                                 >
-                                    {isUpdating ? 'Загрузка' : 'Отметить выполненной'}
+                                    {isUpdating ? '⏳' : 'Отметить выполненной'}
                                 </button>
                             )}
                         </div>

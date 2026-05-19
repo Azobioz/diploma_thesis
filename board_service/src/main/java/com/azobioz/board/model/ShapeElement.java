@@ -26,6 +26,21 @@ public class ShapeElement {
     @Column(name = "text")
     private String text;
 
+    @Column(name = "font_size")
+    private Integer fontSize;
+
+    @Column(name = "font_family")
+    private String fontFamily;
+
+    @Column(name = "is_bold")
+    private Boolean isBold;
+
+    @Column(name = "is_underline")
+    private Boolean isUnderline;
+
+    @Column(name = "border_width")
+    private Integer borderWidth;
+
     @OneToOne
     @JoinColumn(name = "board_element_id")
     private BoardElement boardElement;

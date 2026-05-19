@@ -98,7 +98,10 @@ const BoardRow = ({
     return (
         <>
             <div className="board-row">
-                <div className="board-name-data">{board.boardName}</div>
+                <div
+                    className="board-name-data"
+                    style={{ cursor: 'pointer' }}
+                >{board.boardName}</div>
                 <div className="owner-of-board-data">{owner?.nickname || 'Unknown'}</div>
                 <div className="three-dots-in-board-row" ref={menuRef}>
                     <button

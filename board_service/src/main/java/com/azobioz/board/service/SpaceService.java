@@ -33,12 +33,9 @@ public class SpaceService {
 
         space = spaceRepository.save(space);
 
-        Role spaceCreatorRole = roleRepository.findByRoleType(RoleType.CREATOR_OF_SPACE)
-                .orElseThrow(() -> new RuntimeException("Role SPACE_CREATOR not found. Check RoleInitializerService"));
-
         UserInSpaceWithRole userInSpaceWithRole = new UserInSpaceWithRole();
         userInSpaceWithRole.setUserId(userId);
-        userInSpaceWithRole.setRole(spaceCreatorRole);
+        userInSpaceWithRole.setRole(roleRepository.findByRoleType(RoleType.CREATOR_OF_SPACE).get());
         userInSpaceWithRole.setSpace(space);
 
         userInSpaceWithRoleRepository.save(userInSpaceWithRole);

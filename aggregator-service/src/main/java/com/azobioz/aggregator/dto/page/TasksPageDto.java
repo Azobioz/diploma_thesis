@@ -11,6 +11,7 @@ import java.util.List;
 @AllArgsConstructor
 public class TasksPageDto {
     private Long currentSpaceId;
+    private Long creatorOfSpaceId;
     private String spaceName;
     private Long currentBoardId;
     private String currentBoardName;

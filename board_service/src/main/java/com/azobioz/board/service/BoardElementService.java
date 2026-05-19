@@ -502,6 +502,18 @@ public class BoardElementService {
         if (request.text() != null) {
             shapeElement.setText(request.text());
         }
+        if (request.fontSize() != null) {
+            shapeElement.setFontSize(request.fontSize());
+        }
+        if (request.fontFamily() != null) {
+            shapeElement.setFontFamily(request.fontFamily());
+        }
+        if (request.isBold() != null) {
+            shapeElement.setIsBold(request.isBold());
+        }
+        if (request.isUnderline() != null) {
+            shapeElement.setIsUnderline(request.isUnderline());
+        }
 
         boardElementRepository.save(boardElement);
 
@@ -510,7 +522,12 @@ public class BoardElementService {
                 "shapeType", shapeElement.getShapeType().name(),
                 "borderColor", shapeElement.getBorderColor() != null ? shapeElement.getBorderColor() : "#000000",
                 "fillColor", shapeElement.getFillColor() != null ? shapeElement.getFillColor() : "#ffffff",
-                "text", shapeElement.getText() != null ? shapeElement.getText() : ""
+                "text", shapeElement.getText() != null ? shapeElement.getText() : "",
+                "fontSize", shapeElement.getFontSize(),
+                "fontFamily", shapeElement.getFontFamily() != null ? shapeElement.getFontFamily() : "Noto Sans",
+                "isBold", shapeElement.getIsBold() != null ? shapeElement.getIsBold() : false,
+                "isUnderline", shapeElement.getIsUnderline() != null ? shapeElement.getIsUnderline() : false,
+                "borderWidth", shapeElement.getBorderWidth() != null ? shapeElement.getBorderWidth() : 1
         );
 
         return new BoardElementDto(

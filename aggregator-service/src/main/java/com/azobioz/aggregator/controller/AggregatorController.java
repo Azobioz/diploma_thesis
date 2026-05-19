@@ -100,6 +100,7 @@ public class AggregatorController {
 
         return new TasksPageDto(
                 getCurrentSpaceInfo(spaceId).getSpaceId(),
+                getCurrentSpaceInfo(spaceId).getSpaceCreatedByUserId(),
                 getCurrentSpaceInfo(spaceId).getSpaceName(),
                 getCurrentBoardInfo(spaceId, boardId).getBoardId(),
                 getCurrentBoardInfo(spaceId, boardId).getBoardName(),
@@ -185,9 +186,9 @@ public class AggregatorController {
 
 
     private SpaceDto getCurrentSpaceInfo(Long spaceId) {
-        String url = boardServiceUrl + "/internal/spaces/" + spaceId;
+        String url = boardServiceUrl + "/internal/spaces/" + spaceId; //URL для запроса в сервис board-service
 
-        ResponseEntity<SpaceDto> response = restTemplate.exchange(
+        ResponseEntity<SpaceDto> response = restTemplate.exchange( //Ответ запроса
                 url,
                 HttpMethod.GET,
                 null,
@@ -266,7 +267,7 @@ public class AggregatorController {
         return ResponseEntity.status(response.getStatusCode()).body(response.getBody());
     }
 
-    // Endpoint для получения досок, где пользователь является участником
+    // Запрос для получения досок, где пользователь является участником
     @GetMapping("/spaces/{spaceId}/boards/participant")
     public ResponseEntity<List<BoardDto>> getParticipantBoards(
             @PathVariable Long spaceId,
@@ -278,26 +279,24 @@ public class AggregatorController {
 
         Long userId = Long.valueOf(jwt.getSubject());
 
-        // 1. Получаем ВСЕ доски пространства
-        // Правильный URL: /internal/spaces/{spaceId}/boards
-        String boardsUrl = boardServiceUrl + "/internal/spaces/" + spaceId + "/boards";
-        ResponseEntity<GetBoardsResponse> allBoardsResponse = restTemplate.exchange(
+        //Получаем все доски пространства
+        String boardsUrl = boardServiceUrl + "/internal/spaces/" + spaceId + "/boards"; //URL запроса в board-service
+        ResponseEntity<GetBoardsResponse> allBoardsResponse = restTemplate.exchange( //тело ответа от сервиса board-service
                 boardsUrl,
                 HttpMethod.GET,
                 null,
                 GetBoardsResponse.class
         );
 
-        if (!allBoardsResponse.hasBody() || allBoardsResponse.getBody() == null) {
+        if (!allBoardsResponse.hasBody() || allBoardsResponse.getBody() == null) { //Проверяем, что доски есть
             return ResponseEntity.ok(Collections.emptyList());
         }
 
         List<GetBoardResponse> allBoards = allBoardsResponse.getBody().boards();
 
-        // 2. ← ИСПРАВЛЕНО: Получаем список ID досок, где пользователь является участником
-        // Правильный URL: /internal/spaces/{spaceId}/boards/users/{userId}/boards
-        String userBoardsUrl = boardServiceUrl + "/internal/spaces/" + spaceId + "/boards/users/" + userId + "/boards";
-        ResponseEntity<List<Long>> userBoardIdsResponse = restTemplate.exchange(
+        // Получаем список ID досок, где пользователь является участником
+        String userBoardsUrl = boardServiceUrl + "/internal/spaces/" + spaceId + "/boards/users/" + userId + "/boards"; //URL запроса в board-service
+        ResponseEntity<List<Long>> userBoardIdsResponse = restTemplate.exchange( //тело ответа от сервиса board-service
                 userBoardsUrl,
                 HttpMethod.GET,
                 null,
@@ -308,7 +307,7 @@ public class AggregatorController {
                 ? userBoardIdsResponse.getBody()
                 : Collections.emptyList();
 
-        // 3. Фильтруем и маппим доски в BoardDto
+        // Фильтруем и преобразуем доски в модель BoardDto
         List<BoardDto> participantBoards = allBoards.stream()
                 .filter(board -> userBoardIds.contains(board.boardId()))
                 .map(board -> new BoardDto(
@@ -1087,8 +1086,23 @@ public ResponseEntity<Void> deleteSpace(
 
     }
 
-    // ====================== Task Get ======================
+    // ====================== Board Get ======================
 
+    @GetMapping("/spaces/{spaceId}/boards/{boardId}")
+    public ResponseEntity<BoardDto> getBoard(
+            @PathVariable Long spaceId,
+            @PathVariable Long boardId,
+            @AuthenticationPrincipal Jwt jwt) {
+
+        if (jwt == null) {
+            return ResponseEntity.status(401).build();
+        }
+
+        String url = boardServiceUrl + "/internal/spaces/" + spaceId + "/boards/" + boardId;
+        return restTemplate.getForEntity(url, BoardDto.class);
+    }
+
+    // ====================== Task Get ======================
 
 
     public GetTaskAndUsersWhichDoingTaskAndCreatedByResponse getTask(Long taskId) {
@@ -1196,7 +1210,7 @@ public ResponseEntity<Void> deleteSpace(
                                                     task.taskId(),
                                                     task.taskName(),
                                                     task.deadline(),
-                                                    task.
+                                                    task.isTaskCompleted(),
                                                     new UserAvatarDto(user.getUserId(), user.getNickname(), user.getAvatar())
                                             );
                                         })
@@ -1211,32 +1225,38 @@ public ResponseEntity<Void> deleteSpace(
         return null;
     }
 
-
-
-
-
     // ====================== Task Put ======================
+
+    @PutMapping("/tasks/{taskId}/move")
+    public ResponseEntity<Void> moveTask(
+            @PathVariable Long taskId,
+            @RequestBody MoveTaskRequest request) {
+
+        String url = taskServiceUrl + "/internal/tasks/" + taskId + "/move";
+        restTemplate.put(url, request);
+        return ResponseEntity.ok().build();
+    }
 
     @PutMapping("/tasklists/{taskListId}/edit")
     public String editTaskListName(@PathVariable("taskListId") Long taskListId,
                                    @RequestBody EditTaskListNameRequest request) {
 
-        String url =  taskServiceUrl + "/internal/tasklists/" + taskListId + "/edit";
+        // Формируем URL для вызова task-service (с префиксом /internal/)
+        String url = taskServiceUrl + "/internal/tasklists/" + taskListId + "/edit";
 
-        HttpEntity<EditTaskListNameRequest> bodyForTaskCommentRequest = new HttpEntity<>(request);
+        // Создаем HttpEntity с телом запроса
+        HttpEntity<EditTaskListNameRequest> body = new HttpEntity<>(request);
 
-        ResponseEntity<String> taskListChangeResponse = restTemplate.exchange(
+        // Выполняем запрос к task-service через restTemplate
+        ResponseEntity<String> response = restTemplate.exchange(
                 url,
                 HttpMethod.PUT,
-                bodyForTaskCommentRequest,
-                new ParameterizedTypeReference<>() {
-                }
+                body,
+                String.class
         );
 
-        if (taskListChangeResponse.getBody() != null) {
-            return taskListChangeResponse.getBody();
-        }
-        return null;
+        // Возвращаем ответ от task-service
+        return response.getBody();
     }
 
     @PutMapping("/tasks/{taskId}/edit")
@@ -1320,19 +1340,16 @@ public ResponseEntity<Void> deleteSpace(
 
     // ====================== Board Element Post======================
 
-    //Создание фигуры
+    // Создание фигуры
     @PostMapping("/boards/{boardId}/elements/shape")
-    public BoardElementDto createShapeElement(
-            @PathVariable Long boardId,
+    public ResponseEntity<BoardElementDto> createShapeElement(
+            @PathVariable("boardId") Long boardId,
             @RequestBody CreateShapeElementRequest request,
             @AuthenticationPrincipal Jwt jwt) {
 
-        if (jwt == null) {
-            throw new IllegalArgumentException("User is not authenticated");
-        }
+        if (jwt == null) return ResponseEntity.status(401).build();
 
         String url = boardServiceUrl + "/internal/boards/" + boardId + "/elements/shape";
-
         HttpEntity<CreateShapeElementRequest> entity = new HttpEntity<>(request);
 
         ResponseEntity<BoardElementDto> response = restTemplate.exchange(
@@ -1342,22 +1359,21 @@ public ResponseEntity<Void> deleteSpace(
                 BoardElementDto.class
         );
 
-        return response.getBody();
+        return ResponseEntity.ok(response.getBody());
     }
 
-    //Создание стрелки
+
+
+    // Создание стрелки
     @PostMapping("/boards/{boardId}/elements/arrow")
-    public BoardElementDto createArrowElement(
-            @PathVariable Long boardId,
+    public ResponseEntity<BoardElementDto> createArrowElement(
+            @PathVariable("boardId") Long boardId,
             @RequestBody CreateArrowElementRequest request,
             @AuthenticationPrincipal Jwt jwt) {
 
-        if (jwt == null) {
-            throw new IllegalArgumentException("User is not authenticated");
-        }
+        if (jwt == null) return ResponseEntity.status(401).build();
 
         String url = boardServiceUrl + "/internal/boards/" + boardId + "/elements/arrow";
-
         HttpEntity<CreateArrowElementRequest> entity = new HttpEntity<>(request);
 
         ResponseEntity<BoardElementDto> response = restTemplate.exchange(
@@ -1367,7 +1383,7 @@ public ResponseEntity<Void> deleteSpace(
                 BoardElementDto.class
         );
 
-        return response.getBody();
+        return ResponseEntity.ok(response.getBody());
     }
 
     //Создание текста
@@ -1523,48 +1539,65 @@ public ResponseEntity<Void> deleteSpace(
         return response.getBody();
     }
 
-    //Обновление фигуры
-    @PutMapping("/boards/{boardId}/elements/shape/{elementId}")
-    public BoardElementDto updateShapeElement(
+
+
+    // Перемещение элемента
+    @PutMapping("/spaces/{spaceId}/boards/{boardId}/elements/{elementId}/move")
+    public ResponseEntity<Void> moveBoardElement(
+            @PathVariable Long spaceId,
             @PathVariable Long boardId,
             @PathVariable Long elementId,
+            @RequestBody MoveElementRequest request) {
+
+        String url = boardServiceUrl + "/internal/spaces/" + spaceId + "/boards/" + boardId + "/elements/" + elementId + "/move";
+        restTemplate.put(url, request);
+        return ResponseEntity.ok().build();
+    }
+
+    // Обновление фигуры
+    @PutMapping("/boards/{boardId}/elements/shape/{elementId}")
+    public ResponseEntity<BoardElementDto> updateShapeElement(
+            @PathVariable("boardId") Long boardId,
+            @PathVariable("elementId") Long elementId,
             @RequestBody UpdateShapeElementRequest request,
             @AuthenticationPrincipal Jwt jwt) {
-        if (jwt == null) {
-            throw new IllegalArgumentException("User is not authenticated");
-        }
+
+        if (jwt == null) return ResponseEntity.status(401).build();
 
         String url = boardServiceUrl + "/internal/boards/" + boardId + "/elements/shape/" + elementId;
         HttpEntity<UpdateShapeElementRequest> entity = new HttpEntity<>(request);
+
         ResponseEntity<BoardElementDto> response = restTemplate.exchange(
                 url,
                 HttpMethod.PUT,
                 entity,
                 BoardElementDto.class
         );
-        return response.getBody();
+
+        return ResponseEntity.ok(response.getBody());
     }
 
-    //Обновление стрелки
+    // Обновление стрелки
     @PutMapping("/boards/{boardId}/elements/arrow/{elementId}")
-    public BoardElementDto updateArrowElement(
-            @PathVariable Long boardId,
-            @PathVariable Long elementId,
+    public ResponseEntity<BoardElementDto> updateArrowElement(
+            @PathVariable("boardId") Long boardId,
+            @PathVariable("elementId") Long elementId,
             @RequestBody UpdateArrowElementRequest request,
             @AuthenticationPrincipal Jwt jwt) {
-        if (jwt == null) {
-            throw new IllegalArgumentException("User is not authenticated");
-        }
+
+        if (jwt == null) return ResponseEntity.status(401).build();
 
         String url = boardServiceUrl + "/internal/boards/" + boardId + "/elements/arrow/" + elementId;
         HttpEntity<UpdateArrowElementRequest> entity = new HttpEntity<>(request);
+
         ResponseEntity<BoardElementDto> response = restTemplate.exchange(
                 url,
                 HttpMethod.PUT,
                 entity,
                 BoardElementDto.class
         );
-        return response.getBody();
+
+        return ResponseEntity.ok(response.getBody());
     }
 
     //Обновление текста
@@ -1625,16 +1658,26 @@ public ResponseEntity<Void> deleteSpace(
 
     // Получение всех элементов доски
     @GetMapping("/boards/{boardId}/elements")
-    public List<BoardElementDto> getAllBoardElements(@PathVariable Long boardId) {
+    public ResponseEntity<List<BoardElementDto>> getAllElements(
+            @PathVariable("boardId") Long boardId,
+            @AuthenticationPrincipal Jwt jwt) {
+
+        if (jwt == null) {
+            return ResponseEntity.status(401).build();
+        }
+
         String url = boardServiceUrl + "/internal/boards/" + boardId + "/elements";
-        ResponseEntity<List<BoardElementDto>> response = restTemplate.exchange(
+        ResponseEntity<BoardElementDto[]> response = restTemplate.exchange(
                 url,
                 HttpMethod.GET,
                 null,
-                new ParameterizedTypeReference<List<BoardElementDto>>() {}
+                BoardElementDto[].class
         );
-        return response.getBody();
+
+        return ResponseEntity.ok(Arrays.asList(response.getBody()));
     }
+
+
 
     // Получение конкретной таблицы
     @GetMapping("/boards/{boardId}/elements/table/{tableElementId}")

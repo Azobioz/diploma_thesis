@@ -338,7 +338,7 @@ body, html {
 }
 
 .board-row {
-    cursor: pointer;
+    /*cursor: pointer;*/
     position: relative;
     background-color: #2D2D30;
     width: 1400px;
@@ -375,7 +375,7 @@ body, html {
     right: 250px;
     color: white;
     font-weight: bold;
-    width: 400px;
+    width: 900px;
 }
 
 .tasks-and-create-board-text {
@@ -482,6 +482,7 @@ body, html {
 }
 
 .three-dots-in-board-row-button {
+
     box-shadow: none;
     border-color: transparent;
     background-color: transparent;

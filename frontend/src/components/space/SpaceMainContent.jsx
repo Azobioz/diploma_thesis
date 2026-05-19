@@ -37,6 +37,13 @@ const SpaceMainContent = ({
         }
     };
 
+    // Функция для перехода на страницу доски
+    const handleBoardPageClick = (boardId) => {
+        handleBoardClick(boardId)
+        navigate(`/boardiox/spaces/${spaceId}/boards/${boardId}`);
+
+    };
+
     const handleTasksClick = () => {
         // Получаем первую доску или переходим на создание
         if (boards.length > 0) {
@@ -86,8 +93,7 @@ const SpaceMainContent = ({
                     {boards.map(board => (
                         <div
                             key={board.boardId}
-                            onClick={() => handleBoardClick(board.boardId)}
-                            style={{ cursor: 'pointer' }}
+                            onClick={() => handleBoardPageClick(board.boardId)}
                         >
                             <BoardRow
                                 board={board}

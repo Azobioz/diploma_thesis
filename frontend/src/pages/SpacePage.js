@@ -54,52 +54,49 @@ const SpacePage = () => {
         }
     }, [spaceData, spaceId]);
 
-    // Загрузка основной информации о пространстве
-    useEffect(() => {
-        const fetchSpaceInfo = async () => {
-            if (!spaceId) {
-                console.error("spaceId is undefined!");
-                return;
-            }
-
-            localStorage.setItem('lastSpaceId', spaceId);
-            const token = localStorage.getItem('accessToken');
-            if (!token) {
-                console.error("No access token found!");
-                navigate('/boardiox/auth');
-                return;
-            }
-
-            try {
-                setLoading(true);
-                console.log("Fetching space info for spaceId:", spaceId);
-                const response = await fetch(`http://localhost:8081/boardiox/spaces/${spaceId}`, {
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json',
-                    },
-                });
-                console.log("Response status:", response.status);
-
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}`);
+        // Загрузка основной информации о пространстве
+        useEffect(() => {
+            const fetchSpaceInfo = async () => {
+                if (!spaceId) {
+                    console.error("spaceId is undefined");
+                    return;
                 }
-                const data = await response.json();
-                console.log("Received space data:", data);
-                setSpaceData(data);
-            } catch (err) {
-                console.error("Error fetching space info:", err);
-                // Если пространство не найдено или ошибка авторизации, тогда на auth
-                if (err.message.includes('401') || err.message.includes('403')) {
-                    navigate('/boardiox/auth');
-                }
-            } finally {
-                setLoading(false);
-            }
-        };
 
-        fetchSpaceInfo();
-    }, [spaceId, navigate]);
+                localStorage.setItem('lastSpaceId', spaceId);
+                const token = localStorage.getItem('accessToken');
+                if (!token) {
+                    console.error("No access token found");
+                    navigate('/boardiox/auth'); // Переносим на страницу авторизации, в случае отсутсвия jwt токена
+                    return;
+                }
+
+                try {
+                    setLoading(true);
+                    //Ответ запроса к aggregator-service
+                    const response = await fetch(`http://localhost:8081/boardiox/spaces/${spaceId}`, {
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json',
+                        },
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}`);
+                    }
+
+                    const data = await response.json(); // Тело ответ запроса к aggregator-service
+                    setSpaceData(data);
+                } catch (err) {
+                    if (err.message.includes('401') || err.message.includes('403')) {
+                        navigate('/boardiox/auth');
+                    }
+                } finally {
+                    setLoading(false);
+                }
+            };
+
+            fetchSpaceInfo();
+        }, [spaceId, navigate]);
 
     // Загрузка досок с фильтрацией и сортировкой
     useEffect(() => {

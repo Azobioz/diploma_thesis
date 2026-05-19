@@ -9,5 +9,10 @@ public record UpdateShapeElementRequest(Integer x,
                                         String borderColor,
                                         String fillColor,
                                         String text,
-                                        String shapeType) {
-}
+                                        Integer fontSize,
+                                        String fontFamily,
+                                        Boolean isBold,
+                                        Boolean isUnderline,
+                                        Integer borderWidth,
+                                        String shapeType
+) { }

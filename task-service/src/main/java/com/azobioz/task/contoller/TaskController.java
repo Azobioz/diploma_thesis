@@ -70,6 +70,14 @@ public class TaskController {
         return taskService.editTask(taskId, request);
     }
 
+    @PutMapping("/tasks/{taskId}/move")
+    public ResponseEntity<Void> moveTask(
+            @PathVariable Long taskId,
+            @RequestBody MoveTaskRequest request) {
+        taskService.moveTask(taskId, request.targetTaskListId());
+        return ResponseEntity.ok().build();
+    }
+
 //  =================== DELETE ===========================
     @DeleteMapping("/tasklists/{taskListId}/delete")
     public String deleteTaskList(@PathVariable("taskListId") Long taskListId) {

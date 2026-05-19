@@ -1,0 +1,126 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: boardiox-postgres
+    environment:
+      POSTGRES_DB: boardiox_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 12345
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init-db:/docker-entrypoint-initdb.d
+    networks:
+      - boardiox-network
+
+  account-service:
+    build:
+      context: ./account-service
+      dockerfile: Dockerfile
+    container_name: boardiox-account
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/boardiox_db
+      - SPRING_DATASOURCE_USERNAME=postgres
+      - SPRING_DATASOURCE_PASSWORD=12345
+      - JWT_SECRET=313@#2!131#@309ff243@#32@#92gh9!12!3ff49-142@#39048190@#1234@#
+      - JWT_ACCESS_EXPIRATION=1800000
+      - JWT_REFRESH_EXPIRATION=2592000000
+    ports:
+      - "8084:8084"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - boardiox-network
+    restart: unless-stopped
+
+  board-service:
+    build:
+      context: ./board-service
+      dockerfile: Dockerfile
+    container_name: boardiox-board
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/boardiox_db
+      - SPRING_DATASOURCE_USERNAME=postgres
+      - SPRING_DATASOURCE_PASSWORD=12345
+    ports:
+      - "8082:8082"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      account-service:
+        condition: service_healthy
+    networks:
+      - boardiox-network
+    restart: unless-stopped
+
+  task-service:
+    build:
+      context: ./task-service
+      dockerfile: Dockerfile
+    container_name: boardiox-task
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/boardiox_db
+      - SPRING_DATASOURCE_USERNAME=postgres
+      - SPRING_DATASOURCE_PASSWORD=12345
+    ports:
+      - "8083:8083"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      account-service:
+        condition: service_healthy
+    networks:
+      - boardiox-network
+    restart: unless-stopped
+
+  aggregator-service:
+    build:
+      context: ./aggregator-service
+      dockerfile: Dockerfile
+    container_name: boardiox-aggregator
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - SERVICES_ACCOUNT_URL=http://account-service:8084
+      - SERVICES_BOARD_URL=http://board-service:8082
+      - SERVICES_TASK_URL=http://task-service:8083
+      - JWT_SECRET=313@#2!131#@309ff243@#32@#92gh9!12!3ff49-142@#39048190@#1234@#
+    ports:
+      - "8081:8081"
+    depends_on:
+      account-service:
+        condition: service_healthy
+      board-service:
+        condition: service_healthy
+      task-service:
+        condition: service_healthy
+    networks:
+      - boardiox-network
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: boardiox-frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      aggregator-service:
+        condition: service_healthy
+    networks:
+      - boardiox-network
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+
+networks:
+  boardiox-network:
+    driver: bridge

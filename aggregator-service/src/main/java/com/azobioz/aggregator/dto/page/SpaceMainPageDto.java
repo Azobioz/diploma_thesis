@@ -22,3 +22,4 @@ public class SpaceMainPageDto {
     private List<SpaceDto> spacesCurrentUserParticipate;
     private UserInfoDto spaceCreator;
 }
+

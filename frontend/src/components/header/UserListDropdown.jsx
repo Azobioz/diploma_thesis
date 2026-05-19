@@ -28,7 +28,6 @@ const UserListDropdown = ({
         document.addEventListener('mousedown', handleClickOutside);
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
-
     return (
         <div className="user-list-dropdown-container" ref={dropdownRef}>
             <div onClick={toggleDropdown}>
