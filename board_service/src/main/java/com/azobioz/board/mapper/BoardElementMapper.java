@@ -19,7 +19,12 @@ public class BoardElementMapper {
                         "shapeType", shape.getShapeType().name(),
                         "borderColor", shape.getBorderColor() != null ? shape.getBorderColor() : "#000000",
                         "fillColor", shape.getFillColor() != null ? shape.getFillColor() : "#ffffff",
-                        "text", shape.getText() != null ? shape.getText() : ""
+                        "text", shape.getText() != null ? shape.getText() : "",
+                        "fontSize", shape.getFontSize() != null ? shape.getFontSize() : 12,
+                        "fontFamily", shape.getFontFamily() != null ? shape.getFontFamily() : "Noto Sans",
+                        "isBold", shape.getIsBold() != null ? shape.getIsBold() : false,
+                        "isUnderline", shape.getIsUnderline() != null ? shape.getIsUnderline() : false,
+                        "borderWidth", shape.getBorderWidth() != null ? shape.getBorderWidth() : 1
                 );
             }
             case ARROW -> {
@@ -36,7 +41,9 @@ public class BoardElementMapper {
                 yield Map.of(
                         "content", text.getContent(),
                         "fontSize", text.getFontSize(),
-                        "fontFamily", text.getFontFamily() != null ? text.getFontFamily() : "Arial"
+                        "fontFamily", text.getFontFamily() != null ? text.getFontFamily() : "Arial",
+                        "isBold", text.getIsBold() != null ? text.getIsBold() : false,
+                        "isUnderline", text.getIsUnderline() != null ? text.getIsUnderline() : false
                 );
             }
             case TABLE -> {
@@ -58,9 +65,31 @@ public class BoardElementMapper {
             }
             case IMAGE -> {
                 ImageElement image = boardElement.getImageElement();
+                String base64Image = null;
+                if (image.getImage() != null && image.getImage().length > 0) {
+                    base64Image = java.util.Base64.getEncoder().encodeToString(image.getImage());
+                }
                 yield Map.of(
                         "hasImage", image.getImage() != null && image.getImage().length > 0,
-                        "imageSize", image.getImage() != null ? image.getImage().length : 0
+                        "imageSize", image.getImage() != null ? image.getImage().length : 0,
+                        "imageData", base64Image != null ? base64Image : ""
+                );
+            }
+            case DRAWING -> {
+                DrawingElement drawing = boardElement.getDrawingElement();
+                yield Map.of(
+                        "pointsData", drawing.getPointsData() != null ? drawing.getPointsData() : "[]",
+                        "color", drawing.getColor() != null ? drawing.getColor() : "#000000",
+                        "strokeWidth", drawing.getStrokeWidth() != null ? drawing.getStrokeWidth() : 3
+                );
+            }
+            case COMMENT -> {
+                CommentElement comment = boardElement.getCommentElement();
+                yield Map.of(
+                        "message", comment.getMessage() != null ? comment.getMessage() : "",
+                        "userId", comment.getUserId(),
+                        "createdAt", comment.getCreatedAt(),
+                        "replies", comment.getComments() != null ? comment.getComments() : List.of()
                 );
             }
             default -> Map.of();

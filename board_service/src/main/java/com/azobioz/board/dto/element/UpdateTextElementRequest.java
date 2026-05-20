@@ -8,5 +8,7 @@ public record UpdateTextElementRequest(Integer x,
                                        String color,
                                        String content,
                                        Integer fontSize,
-                                       String fontFamily
+                                       String fontFamily,
+                                       Boolean isBold,
+                                       Boolean isUnderline
 ) { }

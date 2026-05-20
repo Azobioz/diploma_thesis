@@ -1490,8 +1490,13 @@ public ResponseEntity<Void> deleteSpace(
             @AuthenticationPrincipal Jwt jwt) {
         if (jwt == null) throw new IllegalArgumentException("User is not authenticated");
 
+        Long userId = Long.valueOf(jwt.getSubject());
         String url = boardServiceUrl + "/internal/boards/" + boardId + "/elements/comment";
-        HttpEntity<CreateCommentElementRequest> entity = new HttpEntity<>(request);
+        
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("X-User-Id", userId.toString());
+        HttpEntity<CreateCommentElementRequest> entity = new HttpEntity<>(request, headers);
+        
         ResponseEntity<BoardElementDto> response = restTemplate.exchange(
                 url, HttpMethod.POST, entity, BoardElementDto.class
         );
@@ -1507,8 +1512,13 @@ public ResponseEntity<Void> deleteSpace(
             @AuthenticationPrincipal Jwt jwt) {
         if (jwt == null) throw new IllegalArgumentException("User is not authenticated");
 
+        Long userId = Long.valueOf(jwt.getSubject());
         String url = boardServiceUrl + "/internal/boards/" + boardId + "/elements/comment/" + commentElementId + "/reply";
-        HttpEntity<AddCommentReplyRequest> entity = new HttpEntity<>(request);
+        
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("X-User-Id", userId.toString());
+        HttpEntity<AddCommentReplyRequest> entity = new HttpEntity<>(request, headers);
+        
         ResponseEntity<CommentReplyDto> response = restTemplate.exchange(
                 url, HttpMethod.POST, entity, CommentReplyDto.class
         );
@@ -1613,6 +1623,50 @@ public ResponseEntity<Void> deleteSpace(
 
         String url = boardServiceUrl + "/internal/boards/" + boardId + "/elements/text/" + elementId;
         HttpEntity<UpdateTextElementRequest> entity = new HttpEntity<>(request);
+        ResponseEntity<BoardElementDto> response = restTemplate.exchange(
+                url,
+                HttpMethod.PUT,
+                entity,
+                BoardElementDto.class
+        );
+        return response.getBody();
+    }
+
+    //Обновление рисунка
+    @PutMapping("/boards/{boardId}/elements/drawing/{elementId}")
+    public BoardElementDto updateDrawingElement(
+            @PathVariable Long boardId,
+            @PathVariable Long elementId,
+            @RequestBody UpdateDrawingElementRequest request,
+            @AuthenticationPrincipal Jwt jwt) {
+        if (jwt == null) {
+            throw new IllegalArgumentException("User is not authenticated");
+        }
+
+        String url = boardServiceUrl + "/internal/boards/" + boardId + "/elements/drawing/" + elementId;
+        HttpEntity<UpdateDrawingElementRequest> entity = new HttpEntity<>(request);
+        ResponseEntity<BoardElementDto> response = restTemplate.exchange(
+                url,
+                HttpMethod.PUT,
+                entity,
+                BoardElementDto.class
+        );
+        return response.getBody();
+    }
+
+    // Универсальное обновление элемента (для изображений)
+    @PutMapping("/boards/{boardId}/elements/{elementId}")
+    public BoardElementDto updateElement(
+            @PathVariable Long boardId,
+            @PathVariable Long elementId,
+            @RequestBody UpdateElementRequest request,
+            @AuthenticationPrincipal Jwt jwt) {
+        if (jwt == null) {
+            throw new IllegalArgumentException("User is not authenticated");
+        }
+
+        String url = boardServiceUrl + "/internal/boards/" + boardId + "/elements/" + elementId;
+        HttpEntity<UpdateElementRequest> entity = new HttpEntity<>(request);
         ResponseEntity<BoardElementDto> response = restTemplate.exchange(
                 url,
                 HttpMethod.PUT,

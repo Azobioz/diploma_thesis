@@ -6,6 +6,8 @@ import com.azobioz.board.model.*;
 import com.azobioz.board.repository.BoardElementRepository;
 import com.azobioz.board.repository.BoardRepository;
 import com.azobioz.board.repository.TableCellRepository;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.stereotype.Service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.transaction.annotation.Transactional;
@@ -14,6 +16,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -23,6 +26,7 @@ public class BoardElementService {
     private final BoardElementRepository boardElementRepository;
     private final BoardRepository boardRepository;
     private final TableCellRepository tableCellRepository;
+    private final ObjectMapper objectMapper;
 
 
     // ================== Post ===============================
@@ -61,12 +65,11 @@ public class BoardElementService {
         boardElementRepository.save(boardElement);
 
         // 3. Формируем специфические данные для фронтенда
-        Map<String, Object> shapeData = Map.of(
-                "shapeType", shapeElement.getShapeType().name(),
-                "borderColor", shapeElement.getBorderColor() != null ? shapeElement.getBorderColor() : "#000000",
-                "fillColor", shapeElement.getFillColor() != null ? shapeElement.getFillColor() : "#ffffff",
-                "text", shapeElement.getText() != null ? shapeElement.getText() : ""
-        );
+        Map<String, Object> shapeData = new HashMap<>();
+        shapeData.put("shapeType", shapeElement.getShapeType().name());
+        shapeData.put("borderColor", shapeElement.getBorderColor() != null ? shapeElement.getBorderColor() : "#000000");
+        shapeData.put("fillColor", shapeElement.getFillColor() != null ? shapeElement.getFillColor() : "#ffffff");
+        shapeData.put("text", shapeElement.getText() != null ? shapeElement.getText() : "");
 
         // Возвращаем DTO в едином формате
         return new BoardElementDto(
@@ -115,12 +118,11 @@ public class BoardElementService {
         // Сохраняем (CascadeType.ALL должен обработать ArrowElement)
         boardElementRepository.save(boardElement);
 
-        Map<String, Object> arrowData = Map.of(
-                "startX", arrowElement.getStartX(),
-                "startY", arrowElement.getStartY(),
-                "endX",   arrowElement.getEndX(),
-                "endY",   arrowElement.getEndY()
-        );
+        Map<String, Object> arrowData = new HashMap<>();
+        arrowData.put("startX", arrowElement.getStartX());
+        arrowData.put("startY", arrowElement.getStartY());
+        arrowData.put("endX",   arrowElement.getEndX());
+        arrowData.put("endY",   arrowElement.getEndY());
 
         // Возвращаем DTO в едином формате
         return new BoardElementDto(
@@ -169,11 +171,12 @@ public class BoardElementService {
         // Сохраняем (благодаря CascadeType.ALL)
         boardElementRepository.save(boardElement);
 
-        Map<String, Object> textData = Map.of(
-                "content", textElement.getContent(),
-                "fontSize", textElement.getFontSize(),
-                "fontFamily", textElement.getFontFamily() != null ? textElement.getFontFamily() : "Arial"
-        );
+        Map<String, Object> textData = new HashMap<>();
+        textData.put("content", textElement.getContent());
+        textData.put("fontSize", textElement.getFontSize());
+        textData.put("fontFamily", textElement.getFontFamily() != null ? textElement.getFontFamily() : "Arial");
+        textData.put("isBold", textElement.getIsBold() != null ? textElement.getIsBold() : false);
+        textData.put("isUnderline", textElement.getIsUnderline() != null ? textElement.getIsUnderline() : false);
 
         // Возвращаем DTO элемента
         return new BoardElementDto(
@@ -226,9 +229,13 @@ public class BoardElementService {
             // Сохраняем
             boardElementRepository.save(boardElement);
 
+            // Convert image to base64 for immediate response
+            String base64Image = java.util.Base64.getEncoder().encodeToString(file.getBytes());
+
             Map<String, Object> imageData = Map.of(
                     "hasImage", true,
-                    "imageSize", file.getSize()
+                    "imageSize", file.getSize(),
+                    "imageData", base64Image
             );
 
             return new BoardElementDto(
@@ -324,40 +331,32 @@ public class BoardElementService {
         boardElement.setHeight(request.height());
         boardElement.setColor(request.color());
         boardElement.setBoard(board);
-        boardElementRepository.save(boardElement);
+        boardElement = boardElementRepository.save(boardElement);
 
         // 2. Создаём специфику рисования
+        String pointsJson;
+        try {
+            pointsJson = request.points() != null ? objectMapper.writeValueAsString(request.points()) : "[]";
+        } catch (JsonProcessingException e) {
+            pointsJson = "[]";
+        }
+
         DrawingElement drawingElement = new DrawingElement();
-        drawingElement.setTool(request.tool());
         drawingElement.setColor(request.color());
         drawingElement.setStrokeWidth(request.strokeWidth());
+        drawingElement.setPointsData(pointsJson);
         drawingElement.setBoardElement(boardElement);
 
         // Двунаправленная связь
         boardElement.setDrawingElement(drawingElement);
 
-        // 3. Сохраняем точки
-        // Важно, чтобы points приходили отсортированными по orderIndex с фронтенда
-        List<DrawingPoint> points = request.points().stream()
-                .map(p -> {
-                    DrawingPoint point = new DrawingPoint();
-                    point.setX(p.x());
-                    point.setY(p.y());
-                    point.setOrderIndex(p.orderIndex());
-                    point.setDrawingElement(drawingElement);
-                    return point;
-                })
-                .toList();
-
-        drawingElement.setDrawingPoints(points);
-
-        // Сохраняем всё дерево (BoardElement -> DrawingElement -> DrawingPoints)
+        // Сохраняем всё дерево
         boardElementRepository.save(boardElement);
 
         Map<String, Object> drawingData = Map.of(
-                "tool", drawingElement.getTool().name(),
-                "strokeWidth", drawingElement.getStrokeWidth(),
-                "pointsCount", points.size()
+                "pointsData", drawingElement.getPointsData() != null ? drawingElement.getPointsData() : "[]",
+                "color", drawingElement.getColor() != null ? drawingElement.getColor() : "#000000",
+                "strokeWidth", drawingElement.getStrokeWidth() != null ? drawingElement.getStrokeWidth() : 3
         );
 
         return new BoardElementDto(
@@ -514,21 +513,30 @@ public class BoardElementService {
         if (request.isUnderline() != null) {
             shapeElement.setIsUnderline(request.isUnderline());
         }
+        if (request.borderWidth() != null) {
+            shapeElement.setBorderWidth(request.borderWidth());
+        }
 
+        // Save boardElement - cascade will persist shapeElement changes
         boardElementRepository.save(boardElement);
+        
+        // Log for debugging
+        System.out.println("Updated shape element - fontSize: " + shapeElement.getFontSize() + 
+                          ", fontFamily: " + shapeElement.getFontFamily() + 
+                          ", isBold: " + shapeElement.getIsBold() + 
+                          ", isUnderline: " + shapeElement.getIsUnderline());
 
         // Формируем ответ
-        Map<String, Object> shapeData = Map.of(
-                "shapeType", shapeElement.getShapeType().name(),
-                "borderColor", shapeElement.getBorderColor() != null ? shapeElement.getBorderColor() : "#000000",
-                "fillColor", shapeElement.getFillColor() != null ? shapeElement.getFillColor() : "#ffffff",
-                "text", shapeElement.getText() != null ? shapeElement.getText() : "",
-                "fontSize", shapeElement.getFontSize(),
-                "fontFamily", shapeElement.getFontFamily() != null ? shapeElement.getFontFamily() : "Noto Sans",
-                "isBold", shapeElement.getIsBold() != null ? shapeElement.getIsBold() : false,
-                "isUnderline", shapeElement.getIsUnderline() != null ? shapeElement.getIsUnderline() : false,
-                "borderWidth", shapeElement.getBorderWidth() != null ? shapeElement.getBorderWidth() : 1
-        );
+        Map<String, Object> shapeData = new HashMap<>();
+        shapeData.put("shapeType", shapeElement.getShapeType() != null ? shapeElement.getShapeType().name() : null);
+        shapeData.put("borderColor", shapeElement.getBorderColor() != null ? shapeElement.getBorderColor() : "#000000");
+        shapeData.put("fillColor", shapeElement.getFillColor() != null ? shapeElement.getFillColor() : "#ffffff");
+        shapeData.put("text", shapeElement.getText() != null ? shapeElement.getText() : "");
+        shapeData.put("fontSize", shapeElement.getFontSize() != null ? shapeElement.getFontSize() : 12);
+        shapeData.put("fontFamily", shapeElement.getFontFamily() != null ? shapeElement.getFontFamily() : "Noto Sans");
+        shapeData.put("isBold", shapeElement.getIsBold() != null ? shapeElement.getIsBold() : false);
+        shapeData.put("isUnderline", shapeElement.getIsUnderline() != null ? shapeElement.getIsUnderline() : false);
+        shapeData.put("borderWidth", shapeElement.getBorderWidth() != null ? shapeElement.getBorderWidth() : 1);
 
         return new BoardElementDto(
                 boardElement.getId(),
@@ -582,12 +590,11 @@ public class BoardElementService {
         boardElementRepository.save(boardElement);
 
         // Формируем ответ
-        Map<String, Object> arrowData = Map.of(
-                "startX", arrowElement.getStartX(),
-                "startY", arrowElement.getStartY(),
-                "endX", arrowElement.getEndX(),
-                "endY", arrowElement.getEndY()
-        );
+        Map<String, Object> arrowData = new HashMap<>();
+        arrowData.put("startX", arrowElement.getStartX());
+        arrowData.put("startY", arrowElement.getStartY());
+        arrowData.put("endX", arrowElement.getEndX());
+        arrowData.put("endY", arrowElement.getEndY());
 
         return new BoardElementDto(
                 boardElement.getId(),
@@ -645,15 +652,22 @@ public class BoardElementService {
         if (request.color() != null) {
             textElement.setColor(request.color());
         }
+        if (request.isBold() != null) {
+            textElement.setIsBold(request.isBold());
+        }
+        if (request.isUnderline() != null) {
+            textElement.setIsUnderline(request.isUnderline());
+        }
 
         boardElementRepository.save(boardElement);
 
         // Формируем ответ
-        Map<String, Object> textData = Map.of(
-                "content", textElement.getContent(),
-                "fontSize", textElement.getFontSize(),
-                "fontFamily", textElement.getFontFamily() != null ? textElement.getFontFamily() : "Arial"
-        );
+        Map<String, Object> textData = new HashMap<>();
+        textData.put("content", textElement.getContent());
+        textData.put("fontSize", textElement.getFontSize());
+        textData.put("fontFamily", textElement.getFontFamily() != null ? textElement.getFontFamily() : "Arial");
+        textData.put("isBold", textElement.getIsBold() != null ? textElement.getIsBold() : false);
+        textData.put("isUnderline", textElement.getIsUnderline() != null ? textElement.getIsUnderline() : false);
 
         return new BoardElementDto(
                 boardElement.getId(),
@@ -665,6 +679,71 @@ public class BoardElementService {
                 boardElement.getHeight(),
                 boardElement.getColor(),
                 textData
+        );
+    }
+
+    @Transactional
+    public BoardElementDto updateDrawingElement(Long boardId, Long elementId, UpdateDrawingElementRequest request) {
+        // Проверяем существование доски
+        boardRepository.findById(boardId)
+                .orElseThrow(() -> new RuntimeException("Board not found with boardId: " + boardId));
+
+        // Находим элемент
+        BoardElement boardElement = boardElementRepository.findById(elementId)
+                .orElseThrow(() -> new RuntimeException("BoardElement not found with boardId: " + elementId));
+
+        // Проверяем, что это рисунок
+        if (boardElement.getType() != Element.DRAWING) {
+            throw new RuntimeException("Element with boardId " + elementId + " is not a drawing");
+        }
+
+        // Проверяем, что элемент принадлежит доске
+        if (!boardElement.getBoard().getId().equals(boardId)) {
+            throw new RuntimeException("Element does not belong to board with boardId " + boardId);
+        }
+
+        DrawingElement drawingElement = boardElement.getDrawingElement();
+
+        // Обновляем базовые параметры
+        if (request.x() != null) boardElement.setX(request.x());
+        if (request.y() != null) boardElement.setY(request.y());
+        if (request.z() != null) boardElement.setZ(request.z());
+        if (request.width() != null) boardElement.setWidth(request.width());
+        if (request.height() != null) boardElement.setHeight(request.height());
+        if (request.color() != null) {
+            boardElement.setColor(request.color());
+            drawingElement.setColor(request.color());
+        }
+        if (request.strokeWidth() != null) {
+            drawingElement.setStrokeWidth(request.strokeWidth());
+        }
+        if (request.points() != null) {
+            try {
+                drawingElement.setPointsData(objectMapper.writeValueAsString(request.points()));
+            } catch (JsonProcessingException e) {
+                drawingElement.setPointsData("[]");
+            }
+        }
+
+        boardElementRepository.save(boardElement);
+
+        // Формируем ответ
+        Map<String, Object> drawingData = Map.of(
+                "pointsData", drawingElement.getPointsData() != null ? drawingElement.getPointsData() : "[]",
+                "color", drawingElement.getColor() != null ? drawingElement.getColor() : "#000000",
+                "strokeWidth", drawingElement.getStrokeWidth() != null ? drawingElement.getStrokeWidth() : 3
+        );
+
+        return new BoardElementDto(
+                boardElement.getId(),
+                boardElement.getType().name(),
+                boardElement.getX(),
+                boardElement.getY(),
+                boardElement.getZ(),
+                boardElement.getWidth(),
+                boardElement.getHeight(),
+                boardElement.getColor(),
+                drawingData
         );
     }
 
@@ -731,6 +810,50 @@ public class BoardElementService {
                 tableCell.getCol(),
                 tableCell.getContent()
         );
+    }
+
+    // Универсальное обновление элемента (для изображений и других типов)
+    @Transactional
+    public BoardElementDto updateElement(Long boardId, Long elementId, UpdateElementRequest request) {
+        System.out.println("=== updateElement called ===");
+        System.out.println("Board ID: " + boardId);
+        System.out.println("Element ID: " + elementId);
+        System.out.println("Request data: x=" + request.x() + ", y=" + request.y() + 
+                          ", width=" + request.width() + ", height=" + request.height());
+        
+        // Проверяем существование доски
+        boardRepository.findById(boardId)
+                .orElseThrow(() -> new RuntimeException("Board not found with boardId: " + boardId));
+
+        // Находим элемент
+        BoardElement boardElement = boardElementRepository.findById(elementId)
+                .orElseThrow(() -> new RuntimeException("BoardElement not found with boardId: " + elementId));
+
+        System.out.println("Element before update: x=" + boardElement.getX() + ", y=" + boardElement.getY() + 
+                          ", width=" + boardElement.getWidth() + ", height=" + boardElement.getHeight());
+
+        // Проверяем, что элемент принадлежит доске
+        if (!boardElement.getBoard().getId().equals(boardId)) {
+            throw new RuntimeException("Element does not belong to board with boardId " + boardId);
+        }
+
+        // Обновляем базовые параметры
+        if (request.x() != null) boardElement.setX(request.x());
+        if (request.y() != null) boardElement.setY(request.y());
+        if (request.z() != null) boardElement.setZ(request.z());
+        if (request.width() != null) boardElement.setWidth(request.width());
+        if (request.height() != null) boardElement.setHeight(request.height());
+        if (request.color() != null) boardElement.setColor(request.color());
+
+        System.out.println("Element after update: x=" + boardElement.getX() + ", y=" + boardElement.getY() + 
+                          ", width=" + boardElement.getWidth() + ", height=" + boardElement.getHeight());
+
+        boardElementRepository.save(boardElement);
+
+        System.out.println("Element saved to database");
+
+        // Используем маппер для формирования ответа
+        return BoardElementMapper.mapToBoardElementDto(boardElement);
     }
 
     // ================== GET ===============================

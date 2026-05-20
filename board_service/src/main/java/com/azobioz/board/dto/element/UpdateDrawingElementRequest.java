@@ -2,7 +2,7 @@ package com.azobioz.board.dto.element;
 
 import java.util.List;
 
-public record CreateDrawingElementRequest(Integer x,
+public record UpdateDrawingElementRequest(Integer x,
                                           Integer y,
                                           Integer z,
                                           Integer width,

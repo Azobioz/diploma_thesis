@@ -3,13 +3,13 @@ package com.azobioz.aggregator.dto.board.element;
 import java.util.List;
 
 public record CreateDrawingElementRequest(
-        int x,
-        int y,
-        int z,
-        int width,   // bounding box width
-        int height,  // bounding box height
+        Integer x,
+        Integer y,
+        Integer z,
+        Integer width,
+        Integer height,
         String color,
-        String tool,      // PENCIL, ERASER, LASSO
-        int strokeWidth,
+        String tool,
+        Integer strokeWidth,
         List<PointRequest> points
 ) { }

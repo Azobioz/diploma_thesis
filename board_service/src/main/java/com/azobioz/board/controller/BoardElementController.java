@@ -112,6 +112,20 @@ public class BoardElementController {
         return boardElementService.updateTextElement(boardId, elementId, request);
     }
 
+    @PutMapping("/drawing/{elementId}")
+    public BoardElementDto updateDrawingElement(@PathVariable("boardId") Long boardId,
+                                                @PathVariable("elementId") Long elementId,
+                                                @RequestBody UpdateDrawingElementRequest request) {
+        return boardElementService.updateDrawingElement(boardId, elementId, request);
+    }
+
+    @PutMapping("/{elementId}")
+    public BoardElementDto updateElement(@PathVariable("boardId") Long boardId,
+                                         @PathVariable("elementId") Long elementId,
+                                         @RequestBody UpdateElementRequest request) {
+        return boardElementService.updateElement(boardId, elementId, request);
+    }
+
     // ================== GET ===============================
     @GetMapping
     public List<BoardElementDto> getAllElements(@PathVariable("boardId") Long boardId) {

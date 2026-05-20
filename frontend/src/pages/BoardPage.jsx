@@ -6,10 +6,62 @@ const BoardPage = () => {
     const navigate = useNavigate();
     const [boardData, setBoardData] = useState(null);
     const [loading, setLoading] = useState(true);
+    
+    // Current user info (TODO: Get from auth context)
+    const currentUserId = 1;
+
+    // Cache for user avatars and nicknames
+    const [userCache, setUserCache] = useState({});
+    const fetchedUserIdsRef = useRef(new Set()); // Track which users have been fetched
+
+    // Fetch user info (avatar and nickname) for a given userId
+    const fetchUserInfo = async (userId) => {
+        if (!userId || fetchedUserIdsRef.current.has(userId)) {
+            console.log('Skipping fetch for userId:', userId);
+            return; // Skip if already fetched
+        }
+
+        // Mark as fetched immediately to prevent duplicate requests
+        fetchedUserIdsRef.current.add(userId);
+
+        try {
+            console.log('Fetching user info for userId:', userId);
+            const token = localStorage.getItem('accessToken');
+            const response = await fetch(`http://localhost:8081/boardiox/users/${userId}`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (response.ok) {
+                const userData = await response.json();
+                console.log('Fetched user data:', userData);
+                setUserCache(prev => ({
+                    ...prev,
+                    [userId]: {
+                        nickname: userData.nickname,
+                        avatar: userData.avatar // base64 string
+                    }
+                }));
+            } else {
+                console.error('Failed to fetch user info, status:', response.status);
+                // Remove from fetched set so we can retry
+                fetchedUserIdsRef.current.delete(userId);
+            }
+        } catch (err) {
+            console.error('Error fetching user info:', err);
+            // Remove from fetched set so we can retry
+            fetchedUserIdsRef.current.delete(userId);
+        }
+    };
 
     // Состояния для панелей
     const [selectedTool, setSelectedTool] = useState(null);
     const [showShapesMenu, setShowShapesMenu] = useState(false);
+    const [imageFile, setImageFile] = useState(null);
+    const [isUploadingImage, setIsUploadingImage] = useState(false);
+    const fileInputRef = useRef(null);
 
     // Состояния для панорамирования и масштабирования
     const [scale, setScale] = useState(1);
@@ -40,6 +92,25 @@ const BoardPage = () => {
     // Состояния для панелей форматирования
     const [showBorderPanel, setShowBorderPanel] = useState(false);
     const [showColorPicker, setShowColorPicker] = useState(false);
+
+    // Состояния для инструментов рисования
+    const [showDrawingPanel, setShowDrawingPanel] = useState(false);
+    const [drawingTool, setDrawingTool] = useState(null); // 'pencil', 'eraser', 'lasso'
+    const [drawingSize, setDrawingSize] = useState(1); // 1: small (default), 2: medium, 3: large
+    const [drawingColor, setDrawingColor] = useState('#000000'); // black (default)
+    const [isDrawing, setIsDrawing] = useState(false);
+    const [drawPoints, setDrawPoints] = useState([]);
+    const drawingCanvasRef = useRef(null);
+    const [lassoPoints, setLassoPoints] = useState([]);
+    const [isLassoSelecting, setIsLassoSelecting] = useState(false);
+    const [multiSelectedElements, setMultiSelectedElements] = useState([]); // For lasso multi-selection
+
+    // Comment tool states
+    const [showCommentPopup, setShowCommentPopup] = useState(false);
+    const [commentPosition, setCommentPosition] = useState({ x: 0, y: 0 });
+    const [isAddingComment, setIsAddingComment] = useState(false);
+    const [commentText, setCommentText] = useState('');
+    const [expandedCommentId, setExpandedCommentId] = useState(null); // Track which comment is expanded
 
     const canvasRef = useRef(null);
     const textInputRef = useRef(null);
@@ -83,6 +154,24 @@ const BoardPage = () => {
         fetchBoardData();
     }, [spaceId, boardId, navigate]);
 
+    // Fetch user info for all comments when elements change or on initial load
+    useEffect(() => {
+        if (!elements || elements.length === 0) return;
+        
+        const commentElements = elements.filter(el => el.type === 'COMMENT');
+        console.log('Found comment elements:', commentElements.length);
+        
+        commentElements.forEach(commentEl => {
+            const userId = commentEl.element?.userId;
+            console.log('Comment userId:', userId, 'Already fetched:', fetchedUserIdsRef.current.has(userId));
+            
+            if (userId && !fetchedUserIdsRef.current.has(userId)) {
+                console.log('Need to fetch user info for userId:', userId);
+                fetchUserInfo(userId);
+            }
+        });
+    }, [elements]);
+
     // Фокус на textarea при начале редактирования
     useEffect(() => {
         if (isEditingText && textInputRef.current) {
@@ -101,6 +190,17 @@ const BoardPage = () => {
         document.addEventListener('mousedown', handleClickOutside);
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
+
+    // Обработчик клавиши Escape для деактивации инструментов рисования
+    useEffect(() => {
+        const handleKeyDown = (e) => {
+            if (e.key === 'Escape' && drawingTool) {
+                deactivateDrawingTool();
+            }
+        };
+        document.addEventListener('keydown', handleKeyDown);
+        return () => document.removeEventListener('keydown', handleKeyDown);
+    }, [drawingTool]);
 
     const handleLogoClick = () => navigate(`/boardiox/spaces/${spaceId}`);
 
@@ -195,11 +295,455 @@ const BoardPage = () => {
         setSelectedTool(null);
     };
 
+    const handleImageUpload = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        // Validate file type
+        if (!file.type.startsWith('image/')) {
+            alert('Please select an image file');
+            return;
+        }
+
+        setIsUploadingImage(true);
+        const center = getCenterScreenCoords();
+        const token = localStorage.getItem('accessToken');
+
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('x', Math.round(center.x - 100));
+        formData.append('y', Math.round(center.y - 100));
+        formData.append('z', 0);
+        formData.append('width', 200);
+        formData.append('height', 200);
+        formData.append('color', '#ffffff');
+
+
+
+
+// After: Panel only shows for SHAPE elements
+
+
+        try {
+            const response = await fetch(`http://localhost:8081/boardiox/boards/${boardId}/elements/image`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}` },
+                body: formData,
+            });
+
+            if (response.ok) {
+                const newElement = await response.json();
+                console.log('Image element created:', newElement);
+                // Reactively add the new element to the board
+                setElements(prev => {
+                    const updated = [...prev, newElement];
+                    console.log('Updated elements:', updated);
+                    return updated;
+                });
+            } else {
+                const errorText = await response.text();
+                console.error('Server error:', errorText);
+                alert('Failed to upload image: ' + errorText);
+            }
+        } catch (err) {
+            console.error('Error creating image:', err);
+            alert('Error uploading image: ' + err.message);
+        } finally {
+            setIsUploadingImage(false);
+            // Reset file input
+            if (fileInputRef.current) {
+                fileInputRef.current.value = '';
+            }
+            setSelectedTool(null);
+        }
+    };
+
+    const handleImageToolClick = () => {
+        if (fileInputRef.current) {
+            fileInputRef.current.click();
+        }
+    };
+
+    const handleTextToolClick = async () => {
+        const center = getCenterScreenCoords();
+        const token = localStorage.getItem('accessToken');
+
+        const request = {
+            x: Math.round(center.x - 100),
+            y: Math.round(center.y - 25),
+            z: 0,
+            width: 200,
+            height: 50,
+            color: '#000000',
+            content: 'Новый текст',
+            fontSize: 24,
+            fontFamily: 'Noto Sans'
+        };
+
+        try {
+            const response = await fetch(`http://localhost:8081/boardiox/boards/${boardId}/elements/text`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify(request),
+            });
+
+            if (response.ok) {
+                const newElement = await response.json();
+                setElements(prev => [...prev, newElement]);
+                setSelectedElementId(newElement.id);
+                setShowFormatPanel(true);
+                setIsEditingText(true);
+                setEditText(newElement.element?.content || 'Новый текст');
+            }
+        } catch (err) {
+            console.error('Error creating text:', err);
+        }
+
+        setSelectedTool(null);
+    };
+
+    const handleDrawingToolClick = () => {
+        setShowDrawingPanel(prev => !prev);
+        setSelectedTool(prev => prev === 'drawing' ? null : 'drawing');
+    };
+
+    const selectDrawingTool = (tool) => {
+        setDrawingTool(tool);
+        setShowDrawingPanel(false);
+        
+        // Change cursor based on tool
+        const canvas = canvasRef.current;
+        if (tool === 'pencil') {
+            if (canvas) canvas.style.cursor = 'crosshair';
+        } else if (tool === 'eraser') {
+            if (canvas) canvas.style.cursor = 'cell';
+        } else if (tool === 'lasso') {
+            if (canvas) canvas.style.cursor = 'default';
+        }
+    };
+
+    const deactivateDrawingTool = () => {
+        setDrawingTool(null);
+        const canvas = canvasRef.current;
+        if (canvas) canvas.style.cursor = 'default';
+        setIsDrawing(false);
+        setDrawPoints([]);
+        setLassoPoints([]);
+        setIsLassoSelecting(false);
+        setMultiSelectedElements([]);
+    };
+
+    // === COMMENT TOOL HANDLERS ===
+    const handleCommentToolClick = () => {
+        // Show comment popup at center of screen
+        const center = getCenterScreenCoords();
+        setCommentPosition({ x: center.x, y: center.y });
+        setShowCommentPopup(true);
+        setSelectedTool('comment');
+    };
+
+    const handleCreateComment = async () => {
+        if (!commentText.trim()) return;
+        
+        const token = localStorage.getItem('accessToken');
+        const request = {
+            x: commentPosition.x,
+            y: commentPosition.y,
+            z: 0,
+            width: 200,
+            height: 100,
+            message: commentText
+        };
+        
+        try {
+            const response = await fetch(`http://localhost:8081/boardiox/boards/${boardId}/elements/comment`, {
+                method: 'POST',
+                headers: { 
+                    'Authorization': `Bearer ${token}`, 
+                    'Content-Type': 'application/json',
+                    'X-User-Id': '1' // TODO: Get from auth context
+                },
+                body: JSON.stringify(request),
+            });
+            
+            if (response.ok) {
+                const newElement = await response.json();
+                setElements(prev => [...prev, newElement]);
+                setShowCommentPopup(false);
+                setCommentText('');
+                setSelectedTool(null);
+            }
+        } catch (err) {
+            console.error('Error creating comment:', err);
+        }
+    };
+
+    const handleCancelComment = () => {
+        setShowCommentPopup(false);
+        setCommentText('');
+        setSelectedTool(null);
+    };
+
+    // Вспомогательные функции для рисования
+    const calculateBoundingBox = (points) => {
+        if (!points || points.length === 0) return { minX: 0, minY: 0, width: 0, height: 0 };
+        
+        let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+        
+        points.forEach(point => {
+            minX = Math.min(minX, point.x);
+            minY = Math.min(minY, point.y);
+            maxX = Math.max(maxX, point.x);
+            maxY = Math.max(maxY, point.y);
+        });
+        
+        return {
+            minX,
+            minY,
+            width: maxX - minX,
+            height: maxY - minY
+        };
+    };
+
+    const findElementsInsideLasso = (lassoPoints, allElements) => {
+        if (!lassoPoints || lassoPoints.length < 3) return [];
+        
+        return allElements.filter(element => {
+            // Проверяем, находится ли центр элемента внутри полигона лассо
+            const centerX = element.x + element.width / 2;
+            const centerY = element.y + element.height / 2;
+            
+            return isPointInPolygon({ x: centerX, y: centerY }, lassoPoints);
+        });
+    };
+
+    const isPointInPolygon = (point, polygon) => {
+        let inside = false;
+        for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+            const xi = polygon[i].x, yi = polygon[i].y;
+            const xj = polygon[j].x, yj = polygon[j].y;
+            
+            const intersect = ((yi > point.y) !== (yj > point.y))
+                && (point.x < (xj - xi) * (point.y - yi) / (yj - yi) + xi);
+            if (intersect) inside = !inside;
+        }
+        return inside;
+    };
+
+    // === ОБРАБОТЧИКИ РИСОВАНИЯ ===
+    const handleDrawMouseDown = (e) => {
+        if (!drawingTool || isPanning || isResizing || isDraggingElement) return;
+        
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+        
+        const rect = canvas.getBoundingClientRect();
+        const x = (e.clientX - rect.left - panOffset.x) / scale;
+        const y = (e.clientY - rect.top - panOffset.y) / scale;
+        
+        if (drawingTool === 'pencil' || drawingTool === 'eraser') {
+            setIsDrawing(true);
+            setDrawPoints([{ x, y }]);
+        } else if (drawingTool === 'lasso') {
+            setIsLassoSelecting(true);
+            setLassoPoints([{ x, y }]);
+        }
+    };
+
+    const handleDrawMouseMove = (e) => {
+        if (!drawingTool || isPanning || isResizing || isDraggingElement) return;
+        
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+        
+        const rect = canvas.getBoundingClientRect();
+        const x = (e.clientX - rect.left - panOffset.x) / scale;
+        const y = (e.clientY - rect.top - panOffset.y) / scale;
+        
+        if (isDrawing && drawingTool === 'pencil') {
+            setDrawPoints(prev => [...prev, { x, y }]);
+        } else if (isDrawing && drawingTool === 'eraser') {
+            // Стиралка - просто точка, добавляем текущую позицию
+            setDrawPoints(prev => [...prev, { x, y }]);
+        } else if (isLassoSelecting && drawingTool === 'lasso') {
+            setLassoPoints(prev => [...prev, { x, y }]);
+        }
+    };
+
+    const handleDrawMouseUp = async () => {
+        if (!drawingTool) return;
+        
+        if (isDrawing && drawingTool === 'pencil' && drawPoints.length > 1) {
+            // Сохраняем рисунок на сервер
+            const token = localStorage.getItem('accessToken');
+            const boundingBox = calculateBoundingBox(drawPoints);
+            
+            const request = {
+                x: boundingBox.minX,
+                y: boundingBox.minY,
+                z: 0,
+                width: boundingBox.width,
+                height: boundingBox.height,
+                color: drawingColor,
+                strokeWidth: drawingSize === 1 ? 2 : drawingSize === 2 ? 4 : 6,
+                points: drawPoints
+            };
+            
+            try {
+                const response = await fetch(`http://localhost:8081/boardiox/boards/${boardId}/elements/drawing`, {
+                    method: 'POST',
+                    headers: { 
+                        'Authorization': `Bearer ${token}`, 
+                        'Content-Type': 'application/json' 
+                    },
+                    body: JSON.stringify(request),
+                });
+                
+                if (response.ok) {
+                    const newElement = await response.json();
+                    setElements(prev => [...prev, newElement]);
+                }
+            } catch (err) {
+                console.error('Error saving drawing:', err);
+            }
+            
+            setDrawPoints([]);
+        } else if (isDrawing && drawingTool === 'eraser') {
+            // Удаляем рисунки, которые пересекаются с точками стирания
+            const token = localStorage.getItem('accessToken');
+            
+            // Находим рисунки для удаления из elements массива
+            const drawingElements = elements.filter(el => el.type === 'DRAWING');
+            const drawingsToDelete = drawingElements.filter(drawingElement => {
+                if (!drawingElement.element?.pointsData) return false;
+                
+                try {
+                    const points = JSON.parse(drawingElement.element.pointsData);
+                    return drawPoints.some(point => 
+                        points.some(dp => 
+                            Math.abs(dp.x - point.x) < 15 && Math.abs(dp.y - point.y) < 15
+                        )
+                    );
+                } catch (err) {
+                    return false;
+                }
+            });
+            
+            // Удаляем с сервера
+            for (const drawing of drawingsToDelete) {
+                try {
+                    await fetch(`http://localhost:8081/boardiox/boards/${boardId}/elements/${drawing.id}`, {
+                        method: 'DELETE',
+                        headers: { 'Authorization': `Bearer ${token}` },
+                    });
+                } catch (err) {
+                    console.error('Error deleting drawing:', err);
+                }
+            }
+            
+            // Обновляем локальное состояние - удаляем из elements
+            setElements(prev => prev.filter(el => !drawingsToDelete.some(d => d.id === el.id)));
+            setDrawPoints([]);
+        } else if (isLassoSelecting && drawingTool === 'lasso' && lassoPoints.length > 2) {
+            // Lasso selection - find all elements inside the polygon
+            const selectedElements = findElementsInsideLasso(lassoPoints, elements);
+            if (selectedElements.length > 0) {
+                // Select multiple elements
+                setMultiSelectedElements(selectedElements.map(el => el.id));
+                // Set the first element as the primary selected element
+                setSelectedElementId(selectedElements[0].id);
+                setShowFormatPanel(true);
+            }
+            setLassoPoints([]);
+        }
+        
+        setIsDrawing(false);
+        setIsLassoSelecting(false);
+    };
+
     // Сохранение элементов на сервере
     const saveElementToServer = async (element) => {
-        if (!element || element.type !== 'SHAPE') return;
+        if (!element) return;
+
+        console.log('saveElementToServer called for:', element.type, 'Element ID:', element.id);
+        console.log('Element data:', { x: element.x, y: element.y, width: element.width, height: element.height });
+
+        // Check if user has permission to modify this element
+        if (element.type === 'COMMENT') {
+            const commentUserId = element.element?.userId;
+            if (commentUserId && commentUserId !== currentUserId) {
+                console.log('Cannot save comment: not owned by current user');
+                return; // Don't save if user doesn't own the comment
+            }
+        }
 
         const token = localStorage.getItem('accessToken');
+        
+        // Handle IMAGE elements
+        if (element.type === 'IMAGE') {
+            console.log('Saving IMAGE element to server...');
+            const response = await fetch(`http://localhost:8081/boardiox/boards/${boardId}/elements/${element.id}`, {
+                method: 'PUT',
+                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    x: element.x,
+                    y: element.y,
+                    z: element.z || 0,
+                    width: element.width,
+                    height: element.height,
+                    color: element.color
+                }),
+            });
+
+            if (response.ok) {
+                const updatedElement = await response.json();
+                console.log('Server response - updated element:', updatedElement);
+                setElements(prevElements =>
+                    prevElements.map(el => el.id === updatedElement.id ? updatedElement : el)
+                );
+            } else {
+                const errorText = await response.text();
+                console.error('Failed to update image element:', errorText);
+            }
+            return;
+        }
+
+        // Handle TEXT elements
+        if (element.type === 'TEXT') {
+            console.log('Saving TEXT element to server...');
+            const response = await fetch(`http://localhost:8081/boardiox/boards/${boardId}/elements/text/${element.id}`, {
+                method: 'PUT',
+                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    x: element.x,
+                    y: element.y,
+                    z: element.z || 0,
+                    width: element.width,
+                    height: element.height,
+                    color: element.color,
+                    content: element.element?.content ?? '',
+                    fontSize: element.element?.fontSize ?? 24,
+                    fontFamily: element.element?.fontFamily ?? 'Noto Sans',
+                    isBold: element.element?.isBold ?? false,
+                    isUnderline: element.element?.isUnderline ?? false
+                }),
+            });
+
+            if (response.ok) {
+                const updatedElement = await response.json();
+                console.log('Server response - updated text element:', updatedElement);
+                setElements(prevElements =>
+                    prevElements.map(el => el.id === updatedElement.id ? updatedElement : el)
+                );
+            } else {
+                const errorText = await response.text();
+                console.error('Failed to update text element:', errorText);
+            }
+            return;
+        }
+
+        // Handle SHAPE elements
+        if (element.type !== 'SHAPE') return;
         const response = await fetch(`http://localhost:8081/boardiox/boards/${boardId}/elements/shape/${element.id}`, {
             method: 'PUT',
             headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
@@ -213,7 +757,7 @@ const BoardPage = () => {
                 borderColor: element.element?.borderColor ?? '#000000',
                 fillColor: element.element?.fillColor ?? '#64B5F6',
                 text: element.element?.text ?? '',
-                fontSize: element.element?.fontSize ,
+                fontSize: element.element?.fontSize ?? 64,
                 fontFamily: element.element?.fontFamily ?? 'Noto Sans',
                 isBold: element.element?.isBold ?? false,
                 isUnderline: element.element?.isUnderline ?? false,
@@ -228,11 +772,11 @@ const BoardPage = () => {
             console.log("elements", elements)
             setElements(prevElements =>
                 prevElements.map(el => {
-                        if (el.id === updatedElement.id) {
-
-                        }
+                    if (el.id === updatedElement.id) {
+                        return updatedElement;
                     }
-                )
+                    return el;
+                })
             );
 
         }
@@ -244,7 +788,11 @@ const BoardPage = () => {
     // === Обновление формата текста ===
     const updateTextFormat = async (elementId, updates) => {
         const element = elements.find(el => el.id === elementId);
-        if (!element || element.type !== 'SHAPE') return;
+        if (!element || (element.type !== 'SHAPE' && element.type !== 'TEXT')) return;
+
+        console.log('updateTextFormat called for element:', elementId, 'type:', element.type);
+        console.log('Updates:', updates);
+        console.log('Current element.element:', element.element);
 
         // Обновляем только выбранный элемент
         const updatedElement = {
@@ -255,6 +803,24 @@ const BoardPage = () => {
             }
         };
 
+        console.log('Updated element:', updatedElement);
+        setElements(prev => prev.map(el => el.id === elementId ? updatedElement : el));
+        await saveElementToServer(updatedElement);
+    };
+
+    // === Обновление текста для TEXT элементов ===
+    const updateTextContent = async (elementId, newContent) => {
+        const element = elements.find(el => el.id === elementId);
+        if (!element || element.type !== 'TEXT') return;
+
+        const updatedElement = {
+            ...element,
+            element: {
+                ...element.element,
+                content: newContent
+            }
+        };
+
         setElements(prev => prev.map(el => el.id === elementId ? updatedElement : el));
         await saveElementToServer(updatedElement);
     };
@@ -262,14 +828,24 @@ const BoardPage = () => {
     // === Завершение редактирования текста ===
     const finishEditing = async () => {
         const element = elements.find(el => el.id === selectedElementId);
-        if (element) {
+        if (!element) return;
+
+        if (element.type === 'SHAPE') {
             const updatedElement = {
                 ...element,
                 element: { ...element.element, text: editText }
             };
             setElements(prev => prev.map(el => el.id === selectedElementId ? updatedElement : el));
             await saveElementToServer(updatedElement);
+        } else if (element.type === 'TEXT') {
+            const updatedElement = {
+                ...element,
+                element: { ...element.element, content: editText }
+            };
+            setElements(prev => prev.map(el => el.id === selectedElementId ? updatedElement : el));
+            await saveElementToServer(updatedElement);
         }
+        
         setIsEditingText(false);
     };
 
@@ -299,14 +875,39 @@ const BoardPage = () => {
         const element = elements.find(el => el.id === elementId);
         if (!element) return;
 
-        setSelectedElementId(elementId);
-        setIsDraggingElement(true);
-        setDragElementStart({ x: e.clientX, y: e.clientY });
-        setDragElementOffset({ x: element.x, y: element.y });
-        // Показываем панель при выделении (одиночный клик)
-        setShowFormatPanel(true);
-        setShowBorderPanel(false);
-        setShowColorPicker(false);
+        // Check if user has permission to move this element
+        if (element.type === 'COMMENT') {
+            const commentUserId = element.element?.userId;
+            if (commentUserId && commentUserId !== currentUserId) {
+                // User doesn't own this comment, prevent dragging
+                console.log('Cannot move comment: not owned by current user');
+                return;
+            }
+        }
+
+        // If element is part of multi-selection, drag all selected elements
+        if (multiSelectedElements.includes(elementId)) {
+            setSelectedElementId(elementId);
+            setIsDraggingElement(true);
+            setDragElementStart({ x: e.clientX, y: e.clientY });
+            // Store initial positions of all selected elements
+            setDragElementOffset(elements
+                .filter(el => multiSelectedElements.includes(el.id))
+                .map(el => ({ id: el.id, x: el.x, y: el.y }))
+            );
+            setShowFormatPanel(true);
+            setShowBorderPanel(false);
+            setShowColorPicker(false);
+        } else {
+            // Single element drag
+            setSelectedElementId(elementId);
+            setIsDraggingElement(true);
+            setDragElementStart({ x: e.clientX, y: e.clientY });
+            setDragElementOffset({ x: element.x, y: element.y });
+            setShowFormatPanel(true);
+            setShowBorderPanel(false);
+            setShowColorPicker(false);
+        }
     };
 
     // === ОДИНОЧНЫЙ КЛИК ДЛЯ ВЫДЕЛЕНИЯ И ПОКАЗА ПАНЕЛИ ===
@@ -327,25 +928,43 @@ const BoardPage = () => {
 
         setSelectedElementId(elementId);
         setIsEditingText(true);
-        setEditText(element.element?.text || '');
+        
+        // Для TEXT элементов используем content, для SHAPE - text
+        if (element.type === 'TEXT') {
+            setEditText(element.element?.content || '');
+        } else if (element.type === 'SHAPE') {
+            setEditText(element.element?.text || '');
+        }
+        
         setShowFormatPanel(true);
         setShowBorderPanel(false);
         setShowColorPicker(false);
     };
 
-    const handleCanvasMouseDown = (e) => {
+    const handleCanvasMouseDown = async (e) => {
         if (e.button === 2) {
             e.preventDefault();
             setIsPanning(true);
             setPanStart({ x: e.clientX - panOffset.x, y: e.clientY - panOffset.y });
         } else if (e.button === 0 && !isResizing) {
-            if (!e.target.closest('.board-element') && !e.target.closest('.format-panel')) {
-                setSelectedElementId(null);
-                setIsEditingText(false);
-                setShowFormatPanel(false);
-                setShowBorderPanel(false);
-                setShowColorPicker(false);
+            // Не снимаем выделение, если клик на textarea, input или внутри элемента
+            if (e.target.tagName === 'TEXTAREA' || 
+                e.target.tagName === 'INPUT' || 
+                e.target.closest('.board-element') || 
+                e.target.closest('.format-panel')) {
+                return;
             }
+            
+            // Сохраняем текст перед снятием выделения
+            if (isEditingText && selectedElementId) {
+                await finishEditing();
+            }
+            
+            setSelectedElementId(null);
+            setIsEditingText(false);
+            setShowFormatPanel(false);
+            setShowBorderPanel(false);
+            setShowColorPicker(false);
         }
     };
 
@@ -383,12 +1002,27 @@ const BoardPage = () => {
             const dx = (e.clientX - dragElementStart.x) / scale;
             const dy = (e.clientY - dragElementStart.y) / scale;
 
-            const newX = Math.round(dragElementOffset.x + dx);
-            const newY = Math.round(dragElementOffset.y + dy);
+            // Check if we're dragging multiple elements
+            if (Array.isArray(dragElementOffset)) {
+                // Multi-element drag
+                setElements(prev => prev.map(el => {
+                    const offsetData = dragElementOffset.find(d => d.id === el.id);
+                    if (offsetData) {
+                        const newX = Math.round(offsetData.x + dx);
+                        const newY = Math.round(offsetData.y + dy);
+                        return { ...el, x: newX, y: newY };
+                    }
+                    return el;
+                }));
+            } else {
+                // Single element drag
+                const newX = Math.round(dragElementOffset.x + dx);
+                const newY = Math.round(dragElementOffset.y + dy);
 
-            setElements(prev => prev.map(el =>
-                el.id === selectedElementId ? { ...el, x: newX, y: newY } : el
-            ));
+                setElements(prev => prev.map(el =>
+                    el.id === selectedElementId ? { ...el, x: newX, y: newY } : el
+                ));
+            }
         }
     };
 
@@ -400,16 +1034,31 @@ const BoardPage = () => {
         }
 
         if (isResizing && selectedElementId) {
+            console.log('MouseUp - Resizing ended for element:', selectedElementId);
             const element = elements.find(el => el.id === selectedElementId);
+            console.log('Current element state:', element);
             if (element) await saveElementToServer(element);
             setIsResizing(false);
             setActiveHandle(null);
         }
         else if (isDraggingElement && selectedElementId) {
-            const element = elements.find(el => el.id === selectedElementId);
-            if (element) await saveElementToServer(element);
+            console.log('MouseUp - Dragging ended for element:', selectedElementId);
+            
+            // Save all moved elements to server
+            if (Array.isArray(dragElementOffset)) {
+                // Multi-element drag - save all selected elements
+                const movedElements = elements.filter(el => multiSelectedElements.includes(el.id));
+                for (const element of movedElements) {
+                    await saveElementToServer(element);
+                }
+            } else {
+                // Single element drag
+                const element = elements.find(el => el.id === selectedElementId);
+                console.log('Current element state:', element);
+                if (element) await saveElementToServer(element);
+            }
+            
             setIsDraggingElement(false);
-            // Показываем панель после перемещения
             setShowFormatPanel(true);
             setShowBorderPanel(false);
             setShowColorPicker(false);
@@ -449,15 +1098,48 @@ const BoardPage = () => {
                             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="9" cy="9" r="5" /><rect x="13" y="13" width="7" height="7" rx="1" /><path d="M16 9l3 0M19 9l-2 -3M19 9l-2 3" /></svg>
                         </button>
                         <div className="toolbar-divider"></div>
-                        <button className="tool-button" title="Ручка"><i className="bi bi-pencil-fill"></i></button>
+                        <button 
+                            className={`tool-button ${selectedTool === 'drawing' ? 'active' : ''}`} 
+                            onClick={handleDrawingToolClick} 
+                            title="Рисование"
+                        >
+                            <i className="bi bi-pencil-fill"></i>
+                        </button>
                         <div className="toolbar-divider"></div>
                         <button className="tool-button" title="Таблица"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2" /><path d="M3 9h18M3 15h18M9 3v18M15 3v18" /></svg></button>
                         <div className="toolbar-divider"></div>
-                        <button className="tool-button" title="Изображение"><i className="bi bi-image-fill"></i></button>
+                        <button 
+                            className="tool-button" 
+                            title="Изображение" 
+                            onClick={handleImageToolClick}
+                            disabled={isUploadingImage}
+                            style={{ opacity: isUploadingImage ? 0.5 : 1, cursor: isUploadingImage ? 'not-allowed' : 'pointer' }}
+                        >
+                            <i className="bi bi-image-fill"></i>
+                        </button>
+                        <input
+                            ref={fileInputRef}
+                            type="file"
+                            accept="image/*"
+                            style={{ display: 'none' }}
+                            onChange={handleImageUpload}
+                        />
                         <div className="toolbar-divider"></div>
-                        <button className="tool-button" title="Комментарий"><i className="bi bi-chat-square-fill"></i></button>
+                        <button 
+                            className={`tool-button ${selectedTool === 'comment' ? 'active' : ''}`} 
+                            title="Комментарий"
+                            onClick={handleCommentToolClick}
+                        >
+                            <i className="bi bi-chat-square-fill"></i>
+                        </button>
                         <div className="toolbar-divider"></div>
-                        <button className="tool-button" title="Текст"><i className="bi bi-type" style={{ fontWeight: 900, fontSize: '22px' }}></i></button>
+                        <button 
+                            className="tool-button" 
+                            title="Текст" 
+                            onClick={handleTextToolClick}
+                        >
+                            <i className="bi bi-type" style={{ fontWeight: 900, fontSize: '22px' }}></i>
+                        </button>
                     </div>
                     {showShapesMenu && (
                         <div className="shapes-menu">
@@ -467,15 +1149,90 @@ const BoardPage = () => {
                             <button className="shape-btn" onClick={createArrow} title="Стрелка"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M5 19L19 5M19 5H9M19 5V15" /></svg></button>
                         </div>
                     )}
+                    {showDrawingPanel && (
+                        <div className="drawing-panel">
+                            <div className="drawing-tools">
+                                <button 
+                                    className={`drawing-tool-btn ${drawingTool === 'pencil' ? 'active' : ''}`} 
+                                    onClick={() => selectDrawingTool('pencil')}
+                                    title="Карандаш"
+                                >
+                                    <i className="bi bi-pencil-fill"></i>
+                                </button>
+                                <button 
+                                    className={`drawing-tool-btn ${drawingTool === 'eraser' ? 'active' : ''}`} 
+                                    onClick={() => selectDrawingTool('eraser')}
+                                    title="Стиралка"
+                                >
+                                    <i className="bi bi-eraser-fill"></i>
+                                </button>
+                                <button 
+                                    className={`drawing-tool-btn ${drawingTool === 'lasso' ? 'active' : ''}`} 
+                                    onClick={() => selectDrawingTool('lasso')}
+                                    title="Лассо"
+                                >
+                                    <i className="bi bi-bezier2"></i>
+                                </button>
+                            </div>
+                            <div className="drawing-divider"></div>
+                            <div className="drawing-options">
+                                <button 
+                                    className={`drawing-option-btn ${drawingSize === 1 && drawingColor === '#000000' ? 'active' : ''}`} 
+                                    onClick={() => { setDrawingSize(1); setDrawingColor('#000000'); }}
+                                    title="Тонкая черная"
+                                >
+                                    <div className="option-dot option-small-black"></div>
+                                </button>
+                                <button 
+                                    className={`drawing-option-btn ${drawingSize === 2 && drawingColor === '#F44336' ? 'active' : ''}`} 
+                                    onClick={() => { setDrawingSize(2); setDrawingColor('#F44336'); }}
+                                    title="Средняя красная"
+                                >
+                                    <div className="option-dot option-medium-red"></div>
+                                </button>
+                                <button 
+                                    className={`drawing-option-btn ${drawingSize === 3 && drawingColor === '#4CAF50' ? 'active' : ''}`} 
+                                    onClick={() => { setDrawingSize(3); setDrawingColor('#4CAF50'); }}
+                                    title="Толстая зеленая"
+                                >
+                                    <div className="option-dot option-large-green"></div>
+                                </button>
+                            </div>
+                        </div>
+                    )}
                 </div>
 
                 <div
                     className="board-canvas"
                     ref={canvasRef}
-                    onMouseDown={handleCanvasMouseDown}
-                    onMouseMove={handleMouseMove}
-                    onMouseUp={handleMouseUp}
-                    onMouseLeave={handleMouseUp}
+                    onMouseDown={(e) => {
+                        if (drawingTool) {
+                            handleDrawMouseDown(e);
+                        } else {
+                            handleCanvasMouseDown(e);
+                        }
+                    }}
+                    onMouseMove={(e) => {
+                        if (drawingTool) {
+                            handleDrawMouseMove(e);
+                        } else {
+                            handleMouseMove(e);
+                        }
+                    }}
+                    onMouseUp={(e) => {
+                        if (drawingTool) {
+                            handleDrawMouseUp();
+                        } else {
+                            handleMouseUp();
+                        }
+                    }}
+                    onMouseLeave={(e) => {
+                        if (drawingTool) {
+                            handleDrawMouseUp();
+                        } else {
+                            handleMouseUp();
+                        }
+                    }}
                     onWheel={handleWheel}
                     onContextMenu={handleContextMenu}
                 >
@@ -486,25 +1243,149 @@ const BoardPage = () => {
                         <div className="grid-pattern"></div>
                     </div>
 
+                    {/* Comment popup */}
+                    {showCommentPopup && (
+                        <div
+                            className="comment-popup"
+                            style={{
+                                position: 'absolute',
+                                left: commentPosition.x,
+                                top: commentPosition.y,
+                                transform: `scale(${1 / scale})`,
+                                transformOrigin: 'center',
+                                zIndex: 1000,
+                                pointerEvents: 'auto'
+                            }}
+                        >
+                            <div className="comment-popup-content">
+                                <input
+                                    type="text"
+                                    className="comment-input"
+                                    placeholder="Добавить комментарий"
+                                    value={commentText}
+                                    onChange={(e) => setCommentText(e.target.value)}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter') handleCreateComment();
+                                        if (e.key === 'Escape') handleCancelComment();
+                                    }}
+                                    autoFocus
+                                />
+                                <button
+                                    className="comment-send-btn"
+                                    onClick={handleCreateComment}
+                                    title="Отправить"
+                                >
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                        <path d="M22 2L11 13M22 2L15 22L11 13M22 2L2 9L11 13" />
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
                     <div
                         className="board-elements-layer"
                         style={{ transform: `translate(${panOffset.x}px, ${panOffset.y}px) scale(${scale})`, transformOrigin: '0 0', zIndex: 1, position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, pointerEvents: 'none' }}
                     >
+                        {/* SVG слой для рисунков */}
+                        <svg
+                            className="drawing-layer"
+                            style={{
+                                position: 'absolute',
+                                top: 0,
+                                left: 0,
+                                width: '100%',
+                                height: '100%',
+                                pointerEvents: 'none',
+                                zIndex: 0
+                            }}
+                        >
+                            {/* Сохраненные рисунки из elements */}
+                            {elements.filter(el => el.type === 'DRAWING').map((drawingElement) => {
+                                if (!drawingElement.element?.pointsData) return null;
+                                
+                                try {
+                                    const points = JSON.parse(drawingElement.element.pointsData);
+                                    if (!points || points.length < 2) return null;
+                                    
+                                    const strokeWidth = drawingElement.element.strokeWidth || 3;
+                                    const color = drawingElement.element.color || '#000000';
+                                    
+                                    const pathData = points
+                                        .map((point, index) => 
+                                            `${index === 0 ? 'M' : 'L'} ${point.x} ${point.y}`
+                                        )
+                                        .join(' ');
+                                    
+                                    return (
+                                        <path
+                                            key={drawingElement.id}
+                                            d={pathData}
+                                            stroke={color}
+                                            strokeWidth={strokeWidth}
+                                            fill="none"
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                        />
+                                    );
+                                } catch (err) {
+                                    console.error('Error parsing drawing points:', err);
+                                    return null;
+                                }
+                            })}
+                            
+                            {/* Текущий рисунок в процессе создания */}
+                            {isDrawing && drawPoints.length > 1 && (
+                                <path
+                                    d={drawPoints
+                                        .map((point, index) => 
+                                            `${index === 0 ? 'M' : 'L'} ${point.x} ${point.y}`
+                                        )
+                                        .join(' ')}
+                                    stroke={drawingTool === 'eraser' ? 'rgba(255,255,255,0.5)' : drawingColor}
+                                    strokeWidth={drawingSize === 1 ? 2 : drawingSize === 2 ? 4 : 6}
+                                    fill="none"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    style={{ opacity: drawingTool === 'eraser' ? 0.5 : 1 }}
+                                />
+                            )}
+                            
+                            {/* Лассо выделение */}
+                            {isLassoSelecting && lassoPoints.length > 1 && (
+                                <path
+                                    d={lassoPoints
+                                        .map((point, index) => 
+                                            `${index === 0 ? 'M' : 'L'} ${point.x} ${point.y}`
+                                        )
+                                        .join(' ')}
+                                    stroke="#0078D4"
+                                    strokeWidth={2}
+                                    fill="rgba(0,120,212,0.1)"
+                                    strokeDasharray="5,5"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                />
+                            )}
+                        </svg>
+
                         {elements.map(element => {
                             const isSelected = selectedElementId === element.id;
                             const elText = element.element?.text || '';
-                            const elFontSize = element.element.fontSize;
+                            const elFontSize = element.element?.fontSize || 64;
                             const elFontFamily = element.element?.fontFamily || 'Noto Sans';
                             const elIsBold = element.element?.isBold || false;
                             const elIsUnderline = element.element?.isUnderline || false;
                             const elFillColor = element.element?.fillColor || '#64B5F6';
                             const elBorderColor = element.element?.borderColor || '#000000';
                             const elBorderWidth = element.element?.borderWidth || 0;
+                            const hasImage = element.element?.hasImage || false;
+                            const imageSize = element.element?.imageSize || 0;
 
                             return (
                                 <React.Fragment key={element.id}>
                                     {/* Панель форматирования - показывается при выделении */}
-                                    {isSelected && showFormatPanel && !isDraggingElement && !isResizing && (
+                                    {isSelected && showFormatPanel && !isDraggingElement && !isResizing && element.type === 'SHAPE' && (
                                         <div
                                             className="format-panel"
                                             ref={formatPanelRef}
@@ -639,9 +1520,79 @@ const BoardPage = () => {
                                         </div>
                                     )}
 
+                                    {/* Панель форматирования для TEXT элементов */}
+                                    {isSelected && showFormatPanel && !isDraggingElement && !isResizing && element.type === 'TEXT' && (
+                                        <div
+                                            className="format-panel"
+                                            ref={formatPanelRef}
+                                            style={{
+                                                left: element.x,
+                                                top: element.y - 55,
+                                                transform: `scale(${1 / scale})`,
+                                                transformOrigin: 'bottom left'
+                                            }}
+                                        >
+                                            <button
+                                                className={`format-btn ${(element.element?.isUnderline || false) ? 'active' : ''}`}
+                                                onClick={() => {
+                                                    console.log('Underline clicked for element:', element.id);
+                                                    console.log('Current isUnderline:', element.element?.isUnderline);
+                                                    updateTextFormat(element.id, { isUnderline: !(element.element?.isUnderline || false) });
+                                                }}
+                                                title="Подчеркнутый текст"
+                                            >
+                                                <span style={{ textDecoration: 'underline', fontWeight: 400 }}>A</span>
+                                            </button>
+
+                                            <div className="format-divider"></div>
+
+                                            <button
+                                                className={`format-btn ${(element.element?.isBold || false) ? 'active' : ''}`}
+                                                onClick={() => {
+                                                    console.log('Bold clicked for element:', element.id);
+                                                    console.log('Current isBold:', element.element?.isBold);
+                                                    updateTextFormat(element.id, { isBold: !(element.element?.isBold || false) });
+                                                }}
+                                                title="Жирный текст"
+                                            >
+                                                <span style={{ fontWeight: 700 }}>B</span>
+                                            </button>
+
+                                            <div className="format-divider"></div>
+
+                                            {/* Размер текста */}
+                                            <div className="format-dropdown">
+                                                <select
+                                                    className="format-select"
+                                                    value={element.element?.fontSize || 24}
+                                                    onChange={(e) => updateTextFormat(element.id, { fontSize: Number(e.target.value) })}
+                                                >
+                                                    {sizeOptions.map(size => (
+                                                        <option key={size} value={size}>{size}</option>
+                                                    ))}
+                                                </select>
+                                            </div>
+
+                                            <div className="format-divider"></div>
+
+                                            {/* Шрифт текста */}
+                                            <div className="format-dropdown">
+                                                <select
+                                                    className="format-select format-font-select"
+                                                    value={element.element?.fontFamily || 'Noto Sans'}
+                                                    onChange={(e) => updateTextFormat(element.id, { fontFamily: e.target.value })}
+                                                >
+                                                    {fontOptions.map(font => (
+                                                        <option key={font} value={font} style={{ fontFamily: font }}>{font}</option>
+                                                    ))}
+                                                </select>
+                                            </div>
+                                        </div>
+                                    )}
+
                                     {/* Элемент фигуры */}
                                     <div
-                                        className={`board-element ${isSelected ? 'selected' : ''}`}
+                                        className={`board-element ${isSelected ? 'selected' : ''} ${multiSelectedElements.includes(element.id) && multiSelectedElements.length > 1 ? 'multi-selected' : ''}`}
                                         style={{
                                             position: 'absolute',
                                             left: element.x,
@@ -671,6 +1622,7 @@ const BoardPage = () => {
                                                         value={editText}
                                                         onChange={(e) => setEditText(e.target.value)}
                                                         onBlur={finishEditing}
+                                                        onMouseDown={(e) => e.stopPropagation()}
                                                         onKeyDown={(e) => {
                                                             if (e.key === 'Escape') finishEditing();
                                                         }}
@@ -715,6 +1667,7 @@ const BoardPage = () => {
                                                         value={editText}
                                                         onChange={(e) => setEditText(e.target.value)}
                                                         onBlur={finishEditing}
+                                                        onMouseDown={(e) => e.stopPropagation()}
                                                         onKeyDown={(e) => {
                                                             if (e.key === 'Escape') finishEditing();
                                                         }}
@@ -760,6 +1713,7 @@ const BoardPage = () => {
                                                         value={editText}
                                                         onChange={(e) => setEditText(e.target.value)}
                                                         onBlur={finishEditing}
+                                                        onMouseDown={(e) => e.stopPropagation()}
                                                         onKeyDown={(e) => {
                                                             if (e.key === 'Escape') finishEditing();
                                                         }}
@@ -793,8 +1747,201 @@ const BoardPage = () => {
                                             </svg>
                                         )}
 
-                                        {/* Маркер выделения */}
+                                        {element.type === 'IMAGE' && hasImage && (
+                                            <img
+                                                src={`data:image/jpeg;base64,${element.element?.imageData || ''}`}
+                                                alt="Uploaded image"
+                                                style={{
+                                                    width: '100%',
+                                                    height: '100%',
+                                                    objectFit: 'contain',
+                                                    pointerEvents: 'none'
+                                                }}
+                                            />
+                                        )}
+
+                                        {element.type === 'TEXT' && (
+                                            <div
+                                                className="text-element"
+                                                style={{
+                                                    width: '100%',
+                                                    height: '100%',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'flex-start',
+                                                    padding: '4px',
+                                                    boxSizing: 'border-box'
+                                                }}
+                                            >
+                                                {isEditingText && isSelected ? (
+                                                    <textarea
+                                                        ref={textInputRef}
+                                                        className="text-element-input"
+                                                        value={editText}
+                                                        onChange={(e) => setEditText(e.target.value)}
+                                                        onBlur={finishEditing}
+                                                        onMouseDown={(e) => e.stopPropagation()}
+                                                        onKeyDown={(e) => {
+                                                            if (e.key === 'Escape') finishEditing();
+                                                        }}
+                                                        style={{
+                                                            width: '100%',
+                                                            height: '100%',
+                                                            fontSize: `${element.element?.fontSize || 24}px`,
+                                                            fontFamily: element.element?.fontFamily || 'Noto Sans',
+                                                            fontWeight: (element.element?.isBold || false) ? 'bold' : 'normal',
+                                                            textDecoration: (element.element?.isUnderline || false) ? 'underline' : 'none',
+                                                            color: element.color || '#000000',
+                                                            border: 'none',
+                                                            outline: 'none',
+                                                            resize: 'none',
+                                                            backgroundColor: 'transparent',
+                                                            padding: '0',
+                                                            margin: '0'
+                                                        }}
+                                                    />
+                                                ) : (
+                                                    <div
+                                                        className="text-element-display"
+                                                        style={{
+                                                            fontSize: `${element.element?.fontSize || 24}px`,
+                                                            fontFamily: element.element?.fontFamily || 'Noto Sans',
+                                                            fontWeight: (element.element?.isBold || false) ? 'bold' : 'normal',
+                                                            textDecoration: (element.element?.isUnderline || false) ? 'underline' : 'none',
+                                                            color: element.color || '#000000',
+                                                            whiteSpace: 'pre-wrap',
+                                                            wordBreak: 'break-word',
+                                                            lineHeight: '1.2'
+                                                        }}
+                                                    >
+                                                        {element.element?.content || 'Текст'}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
+
+                                        {/* Comment element */}
+                                        {element.type === 'COMMENT' && (
+                                            <div 
+                                                className={`comment-element ${expandedCommentId === element.id ? 'expanded' : 'collapsed'} ${element.element?.userId && element.element?.userId !== currentUserId ? 'owned-by-other' : ''}`}
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    // Toggle expansion
+                                                    setExpandedCommentId(expandedCommentId === element.id ? null : element.id);
+                                                }}
+                                            >
+                                                {/* Collapsed state - just avatar */}
+                                                {expandedCommentId !== element.id && (
+                                                    <div className="comment-avatar-collapsed">
+                                                        {(() => {
+                                                            const userId = element.element?.userId;
+                                                            const cachedUser = userId ? userCache[userId] : null;
+                                                            console.log('Rendering collapsed avatar - userId:', userId, 'cachedUser:', cachedUser, 'userName:', element.element?.userName);
+                                                            
+                                                            if (userId && cachedUser?.avatar) {
+                                                                return (
+                                                                    <img 
+                                                                        src={`data:image/png;base64,${cachedUser.avatar}`}
+                                                                        alt={cachedUser.nickname || 'User'}
+                                                                    />
+                                                                );
+                                                            } else {
+                                                                const displayName = cachedUser?.nickname || element.element?.userName || 'U';
+                                                                console.log('Using fallback - displayName:', displayName);
+                                                                return (
+                                                                    <span>
+                                                                        {displayName.charAt(0).toUpperCase()}
+                                                                    </span>
+                                                                );
+                                                            }
+                                                        })()}
+                                                    </div>
+                                                )}
+                                                
+                                                {/* Expanded state - full comment */}
+                                                {expandedCommentId === element.id && (
+                                                    <div className="comment-content-expanded">
+                                                        <div className="comment-header">
+                                                            <div className="comment-avatar">
+                                                                {(() => {
+                                                                    const userId = element.element?.userId;
+                                                                    const cachedUser = userId ? userCache[userId] : null;
+                                                                    console.log('Rendering expanded avatar - userId:', userId, 'cachedUser:', cachedUser);
+                                                                    
+                                                                    if (userId && cachedUser?.avatar) {
+                                                                        return (
+                                                                            <img 
+                                                                                src={`data:image/png;base64,${cachedUser.avatar}`}
+                                                                                alt={cachedUser.nickname || 'User'}
+                                                                            />
+                                                                        );
+                                                                    } else {
+                                                                        const displayName = cachedUser?.nickname || element.element?.userName || 'U';
+                                                                        return (
+                                                                            <span>
+                                                                                {displayName.charAt(0).toUpperCase()}
+                                                                            </span>
+                                                                        );
+                                                                    }
+                                                                })()}
+                                                            </div>
+                                                            <div className="comment-user-info">
+                                                                <span className="comment-username">
+                                                                    {(() => {
+                                                                        const userId = element.element?.userId;
+                                                                        const cachedUser = userId ? userCache[userId] : null;
+                                                                        const displayName = cachedUser?.nickname || element.element?.userName || 'User';
+                                                                        console.log('Displaying username - userId:', userId, 'displayName:', displayName);
+                                                                        return displayName;
+                                                                    })()}
+                                                                </span>
+                                                            </div>
+                                                            <div className="comment-datetime">
+                                                                <div className="comment-date">
+                                                                    {element.element?.createdAt ? new Date(element.element.createdAt).toLocaleDateString('ru-RU') : ''}
+                                                                </div>
+                                                                <div className="comment-time">
+                                                                    {element.element?.createdAt ? new Date(element.element.createdAt).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }) : ''}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <div className="comment-message">
+                                                            {element.element?.message || ''}
+                                                        </div>
+                                                        <div className="comment-footer">
+                                                            <button
+                                                                className="comment-reply-btn"
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    // TODO: Implement reply functionality
+                                                                }}
+                                                            >
+                                                                Оставить комментарий
+                                                            </button>
+                                                            <span className="comment-replies-count">
+                                                                {element.element?.replies?.length || 0} ответов
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
                                         {isSelected && <div className="selection-border"></div>}
+
+                                        {/* Invisible hitbox for DRAWING elements */}
+                                        {element.type === 'DRAWING' && (
+                                            <div
+                                                className="drawing-hitbox"
+                                                style={{
+                                                    position: 'absolute',
+                                                    top: 0,
+                                                    left: 0,
+                                                    width: '100%',
+                                                    height: '100%',
+                                                    cursor: 'move'
+                                                }}
+                                            />
+                                        )}
 
                                         {/* Маркеры масштабирования */}
                                         {isSelected && !isDraggingElement && (

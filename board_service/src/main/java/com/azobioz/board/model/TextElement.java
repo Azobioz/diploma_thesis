@@ -25,6 +25,12 @@ public class TextElement {
     @Column(name = "color")
     private String color;
 
+    @Column(name = "is_bold")
+    private Boolean isBold = false;
+
+    @Column(name = "is_underline")
+    private Boolean isUnderline = false;
+
     @OneToOne
     @JoinColumn(name = "board_element_id")
     private BoardElement boardElement;
