@@ -14,11 +14,14 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -844,6 +847,58 @@ public class BoardElementService {
         if (request.width() != null) boardElement.setWidth(request.width());
         if (request.height() != null) boardElement.setHeight(request.height());
         if (request.color() != null) boardElement.setColor(request.color());
+
+        // Если это COMMENT элемент, обновляем ответы
+        if (boardElement.getType() == Element.COMMENT && boardElement.getCommentElement() != null) {
+            CommentElement commentElement = boardElement.getCommentElement();
+            
+            System.out.println("Processing COMMENT element update");
+            
+            // Обновляем replies если они есть в запросе
+            if (request.replies() != null && !request.replies().isEmpty()) {
+                System.out.println("Updating replies, count: " + request.replies().size());
+                
+                // Получаем текущие ответы
+                List<CommentReplies> currentReplies = commentElement.getComments();
+                if (currentReplies == null) {
+                    currentReplies = new ArrayList<>();
+                    commentElement.setComments(currentReplies);
+                }
+                
+                // Создаем мапу существующих ответов по ID для быстрого поиска
+                Map<Long, CommentReplies> existingRepliesMap = currentReplies.stream()
+                        .collect(Collectors.toMap(CommentReplies::getId, r -> r));
+                
+                // Создаем мапу новых ответов по временному ID (индекс)
+                List<Map<String, Object>> newReplies = request.replies();
+                
+                // Удаляем ответы, которых нет в новом списке
+                // (простая стратегия: удаляем все и создаем заново)
+                currentReplies.clear();
+                
+                // Создаем новые ответы
+                for (Map<String, Object> replyData : newReplies) {
+                    CommentReplies reply = new CommentReplies();
+                    reply.setCommentElement(commentElement);
+                    
+                    // Извлекаем данные из Map
+                    if (replyData.containsKey("userId")) {
+                        reply.setUserId(((Number) replyData.get("userId")).longValue());
+                    }
+                    if (replyData.containsKey("message")) {
+                        reply.setMessage((String) replyData.get("message"));
+                    }
+                    if (replyData.containsKey("createdAt")) {
+                        reply.setCreatedAt(Instant.parse((String) replyData.get("createdAt")).atZone(ZoneOffset.UTC).toLocalDateTime());
+                    }
+                    
+                    currentReplies.add(reply);
+                    System.out.println("Added reply: " + reply.getMessage());
+                }
+                
+                System.out.println("Replies updated successfully");
+            }
+        }
 
         System.out.println("Element after update: x=" + boardElement.getX() + ", y=" + boardElement.getY() + 
                           ", width=" + boardElement.getWidth() + ", height=" + boardElement.getHeight());

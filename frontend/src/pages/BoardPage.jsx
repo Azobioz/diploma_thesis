@@ -2,13 +2,20 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 
 const BoardPage = () => {
+
+
+
     const { spaceId, boardId } = useParams();
     const navigate = useNavigate();
     const [boardData, setBoardData] = useState(null);
     const [loading, setLoading] = useState(true);
     
-    // Current user info (TODO: Get from auth context)
-    const currentUserId = 1;
+    // Current user info from localStorage
+    const currentUserId = localStorage.getItem('userId') ? parseInt(localStorage.getItem('userId')) : null;
+
+    // Board and space creator IDs for permission checks
+    const [boardCreatorId, setBoardCreatorId] = useState(null);
+    const [spaceCreatorId, setSpaceCreatorId] = useState(null);
 
     // Cache for user avatars and nicknames
     const [userCache, setUserCache] = useState({});
@@ -107,10 +114,14 @@ const BoardPage = () => {
 
     // Comment tool states
     const [showCommentPopup, setShowCommentPopup] = useState(false);
+    const [showCommentInput, setShowCommentInput] = useState(false);
     const [commentPosition, setCommentPosition] = useState({ x: 0, y: 0 });
     const [isAddingComment, setIsAddingComment] = useState(false);
     const [commentText, setCommentText] = useState('');
     const [expandedCommentId, setExpandedCommentId] = useState(null); // Track which comment is expanded
+    const [replyingToCommentId, setReplyingToCommentId] = useState(null); // Track which comment we're replying to
+    const [replyText, setReplyText] = useState(''); // Reply text input
+    const [commentMenuId, setCommentMenuId] = useState(null); // Track which comment menu is open
 
     const canvasRef = useRef(null);
     const textInputRef = useRef(null);
@@ -122,6 +133,16 @@ const BoardPage = () => {
             try {
                 const token = localStorage.getItem('accessToken');
 
+                // Fetch space data to get space creator
+                const spaceResponse = await fetch(`http://localhost:8081/boardiox/spaces/${spaceId}`, {
+                    headers: { 'Authorization': `Bearer ${token}` },
+                });
+
+                if (spaceResponse.ok) {
+                    const spaceData = await spaceResponse.json();
+                    setSpaceCreatorId(spaceData.spaceCreatedByUserId);
+                }
+
                 const boardResponse = await fetch(`http://localhost:8081/boardiox/spaces/${spaceId}/boards/${boardId}`, {
                     headers: { 'Authorization': `Bearer ${token}` },
                 });
@@ -129,6 +150,7 @@ const BoardPage = () => {
                 if (boardResponse.ok) {
                     const data = await boardResponse.json();
                     setBoardData(data);
+                    setBoardCreatorId(data.boardCreatedByUserId);
                 } else {
                     navigate(`/boardiox/spaces/${spaceId}`);
                     return;
@@ -186,23 +208,64 @@ const BoardPage = () => {
                 setShowBorderPanel(false);
                 setShowColorPicker(false);
             }
+            
+            // Cancel reply if clicking outside comment panel
+            if (replyingToCommentId) {
+                const commentElement = e.target.closest('.comment-element');
+                if (!commentElement) {
+                    handleCancelReply();
+                }
+            }
+            
+            // Close comment menu if clicking outside
+            if (commentMenuId) {
+                const menuElement = e.target.closest('.comment-thread-menu-wrapper');
+                if (!menuElement) {
+                    setCommentMenuId(null);
+                }
+            }
         };
         document.addEventListener('mousedown', handleClickOutside);
         return () => document.removeEventListener('mousedown', handleClickOutside);
-    }, []);
+    }, [replyingToCommentId, commentMenuId]);
 
     // Обработчик клавиши Escape для деактивации инструментов рисования
     useEffect(() => {
         const handleKeyDown = (e) => {
-            if (e.key === 'Escape' && drawingTool) {
-                deactivateDrawingTool();
+            if (e.key === 'Escape') {
+                if (drawingTool) {
+                    deactivateDrawingTool();
+                }
+                if (isAddingComment) {
+                    setIsAddingComment(false);
+                    setSelectedTool(null);
+                    setShowCommentInput(false);
+                    setCommentText('');
+                }
             }
         };
+
         document.addEventListener('keydown', handleKeyDown);
         return () => document.removeEventListener('keydown', handleKeyDown);
-    }, [drawingTool]);
+    }, [drawingTool, isAddingComment]);
 
     const handleLogoClick = () => navigate(`/boardiox/spaces/${spaceId}`);
+
+    // Check if current user can delete a comment
+    const canDeleteComment = (commentUserId) => {
+        if (!currentUserId) return false;
+        
+        // User who created the comment can delete it
+        if (commentUserId === currentUserId) return true;
+        
+        // Board creator can delete any comment
+        if (boardCreatorId && boardCreatorId === currentUserId) return true;
+        
+        // Space creator can delete any comment
+        if (spaceCreatorId && spaceCreatorId === currentUserId) return true;
+        
+        return false;
+    };
 
     const handleToolClick = (toolId) => {
         if (toolId === 'shapes') {
@@ -436,45 +499,82 @@ const BoardPage = () => {
     // === COMMENT TOOL HANDLERS ===
     const handleCommentToolClick = () => {
         // Show comment popup at center of screen
-        const center = getCenterScreenCoords();
-        setCommentPosition({ x: center.x, y: center.y });
-        setShowCommentPopup(true);
+        setIsAddingComment(!isAddingComment);
         setSelectedTool('comment');
+        setShowCommentInput(false);
+        setCommentText('');
     };
 
     const handleCreateComment = async () => {
-        if (!commentText.trim()) return;
-        
+        if (!commentText.trim()) {
+            setShowCommentInput(false);
+            setIsAddingComment(false);
+            setSelectedTool(null);
+            return;
+        }
+
         const token = localStorage.getItem('accessToken');
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+
+        const rect = canvas.getBoundingClientRect();
+        const x = (commentPosition.x - rect.left - panOffset.x) / scale;
+        const y = (commentPosition.y - rect.top - panOffset.y) / scale;
+
         const request = {
-            x: commentPosition.x,
-            y: commentPosition.y,
+            x: Math.round(x - 100),
+            y: Math.round(y - 25),
             z: 0,
             width: 200,
-            height: 100,
+            height: 50,
             message: commentText
         };
-        
+
         try {
             const response = await fetch(`http://localhost:8081/boardiox/boards/${boardId}/elements/comment`, {
                 method: 'POST',
-                headers: { 
-                    'Authorization': `Bearer ${token}`, 
+                headers: {
+                    'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json',
-                    'X-User-Id': '1' // TODO: Get from auth context
+                    'X-User-Id': currentUserId || '1'
                 },
                 body: JSON.stringify(request),
             });
-            
+
             if (response.ok) {
                 const newElement = await response.json();
                 setElements(prev => [...prev, newElement]);
-                setShowCommentPopup(false);
-                setCommentText('');
-                setSelectedTool(null);
             }
         } catch (err) {
             console.error('Error creating comment:', err);
+        } finally {
+            setShowCommentInput(false);
+            setIsAddingComment(false);
+            setSelectedTool(null);
+            setCommentText('');
+        }
+    };
+
+    // Handle delete comment element
+    const handleDeleteComment = async (commentElementId) => {
+        const token = localStorage.getItem('accessToken');
+        
+        try {
+            const response = await fetch(`http://localhost:8081/boardiox/boards/${boardId}/elements/${commentElementId}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            
+            if (response.ok) {
+                // Remove the comment element reactively
+                setElements(prev => prev.filter(el => el.id !== commentElementId));
+                setExpandedCommentId(null);
+                setCommentMenuId(null);
+            } else {
+                console.error('Failed to delete comment');
+            }
+        } catch (err) {
+            console.error('Error deleting comment:', err);
         }
     };
 
@@ -482,6 +582,84 @@ const BoardPage = () => {
         setShowCommentPopup(false);
         setCommentText('');
         setSelectedTool(null);
+    };
+
+    // Handle reply submission
+    const handleReplySubmit = async (commentElementId) => {
+        if (!replyText.trim()) return;
+        
+        const token = localStorage.getItem('accessToken');
+        
+        try {
+            // Find the comment element
+            const commentElement = elements.find(el => el.id === commentElementId);
+            if (!commentElement) return;
+            
+            // Create reply object
+            const newReply = {
+                userId: currentUserId,
+                message: replyText.trim(),
+                createdAt: new Date().toISOString()
+            };
+            
+            // Update the comment element with the new reply
+            const updatedReplies = [...(commentElement.element?.replies || []), newReply];
+            const updatedElement = {
+                ...commentElement,
+                element: {
+                    ...commentElement.element,
+                    replies: updatedReplies
+                }
+            };
+            
+            // Update local state immediately for reactive display
+            setElements(prev => prev.map(el => 
+                el.id === commentElementId ? updatedElement : el
+            ));
+            
+            // Save to server
+            const response = await fetch(`http://localhost:8081/boardiox/boards/${boardId}/elements/${commentElementId}`, {
+                method: 'PUT',
+                headers: { 
+                    'Authorization': `Bearer ${token}`, 
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    x: commentElement.x,
+                    y: commentElement.y,
+                    z: commentElement.z || 0,
+                    width: commentElement.width,
+                    height: commentElement.height,
+                    color: commentElement.color,
+                    message: commentElement.element?.message,
+                    userId: commentElement.element?.userId,
+                    createdAt: commentElement.element?.createdAt,
+                    replies: updatedReplies
+                }),
+            });
+            
+            if (response.ok) {
+                const serverUpdatedElement = await response.json();
+                // Update with server response to ensure consistency
+                setElements(prev => prev.map(el => 
+                    el.id === commentElementId ? serverUpdatedElement : el
+                ));
+            } else {
+                console.error('Failed to save reply:', await response.text());
+            }
+            
+            // Clear reply mode
+            setReplyText('');
+            setReplyingToCommentId(null);
+        } catch (err) {
+            console.error('Error submitting reply:', err);
+        }
+    };
+
+    // Cancel reply
+    const handleCancelReply = () => {
+        setReplyText('');
+        setReplyingToCommentId(null);
     };
 
     // Вспомогательные функции для рисования
@@ -671,10 +849,21 @@ const BoardPage = () => {
         // Check if user has permission to modify this element
         if (element.type === 'COMMENT') {
             const commentUserId = element.element?.userId;
-            if (commentUserId && commentUserId !== currentUserId) {
-                console.log('Cannot save comment: not owned by current user');
+            console.log('Comment save permission check - commentUserId:', commentUserId, 'currentUserId:', currentUserId);
+            
+            // Block if current user is not logged in
+            if (!currentUserId) {
+                console.log('Cannot save comment: user not logged in');
+                return;
+            }
+            
+            // Only block if userId exists AND doesn't match current user
+            if (commentUserId !== undefined && commentUserId !== null && commentUserId !== currentUserId) {
+                console.log('Cannot save comment: owned by user', commentUserId, 'current user is', currentUserId);
                 return; // Don't save if user doesn't own the comment
             }
+            
+            console.log('Allowing comment save - owned by current user');
         }
 
         const token = localStorage.getItem('accessToken');
@@ -738,6 +927,35 @@ const BoardPage = () => {
             } else {
                 const errorText = await response.text();
                 console.error('Failed to update text element:', errorText);
+            }
+            return;
+        }
+
+        // Handle COMMENT elements
+        if (element.type === 'COMMENT') {
+            console.log('Saving COMMENT element to server...');
+            const response = await fetch(`http://localhost:8081/boardiox/boards/${boardId}/elements/${element.id}`, {
+                method: 'PUT',
+                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    x: element.x,
+                    y: element.y,
+                    z: element.z || 0,
+                    width: element.width,
+                    height: element.height,
+                    color: element.color
+                }),
+            });
+
+            if (response.ok) {
+                const updatedElement = await response.json();
+                console.log('Server response - updated comment element:', updatedElement);
+                setElements(prevElements =>
+                    prevElements.map(el => el.id === updatedElement.id ? updatedElement : el)
+                );
+            } else {
+                const errorText = await response.text();
+                console.error('Failed to update comment element:', errorText);
             }
             return;
         }
@@ -877,12 +1095,23 @@ const BoardPage = () => {
 
         // Check if user has permission to move this element
         if (element.type === 'COMMENT') {
+            console.log("element", element)
             const commentUserId = element.element?.userId;
-            if (commentUserId && commentUserId !== currentUserId) {
-                // User doesn't own this comment, prevent dragging
-                console.log('Cannot move comment: not owned by current user');
+            console.log('Comment move permission check - commentUserId:', commentUserId, 'currentUserId:', currentUserId);
+            
+            // Block if current user is not logged in
+            if (!currentUserId) {
+                console.log('Cannot move comment: user not logged in');
                 return;
             }
+            
+            // Only block if userId exists AND doesn't match current user
+            if (commentUserId !== undefined && commentUserId !== null && commentUserId !== currentUserId) {
+                console.log('Cannot move comment: owned by user', commentUserId, 'current user is', currentUserId);
+                return;
+            }
+            
+            console.log('Allowing comment move - owned by current user');
         }
 
         // If element is part of multi-selection, drag all selected elements
@@ -942,24 +1171,37 @@ const BoardPage = () => {
     };
 
     const handleCanvasMouseDown = async (e) => {
+        // Если активен инструмент комментариев
+        if (isAddingComment && e.button === 0) {
+            const canvas = canvasRef.current;
+            if (!canvas) return;
+
+            const rect = canvas.getBoundingClientRect();
+            const x = (e.clientX - rect.left - panOffset.x) / scale;
+            const y = (e.clientY - rect.top - panOffset.y) / scale;
+
+            setCommentPosition({ x: e.clientX, y: e.clientY });
+            setShowCommentInput(true);
+            return;
+        }
+
         if (e.button === 2) {
             e.preventDefault();
             setIsPanning(true);
             setPanStart({ x: e.clientX - panOffset.x, y: e.clientY - panOffset.y });
         } else if (e.button === 0 && !isResizing) {
-            // Не снимаем выделение, если клик на textarea, input или внутри элемента
-            if (e.target.tagName === 'TEXTAREA' || 
-                e.target.tagName === 'INPUT' || 
-                e.target.closest('.board-element') || 
-                e.target.closest('.format-panel')) {
+            if (e.target.tagName === 'TEXTAREA' ||
+                e.target.tagName === 'INPUT' ||
+                e.target.closest('.board-element') ||
+                e.target.closest('.format-panel') ||
+                e.target.closest('.comment-input-popup')) {
                 return;
             }
-            
-            // Сохраняем текст перед снятием выделения
+
             if (isEditingText && selectedElementId) {
                 await finishEditing();
             }
-            
+
             setSelectedElementId(null);
             setIsEditingText(false);
             setShowFormatPanel(false);
@@ -1067,12 +1309,32 @@ const BoardPage = () => {
 
     const handleContextMenu = (e) => e.preventDefault();
 
-    //Масштабирование доски
+    //Масштабирование доски по центру экрана пользователя
     const handleWheel = (e) => {
         e.preventDefault();
+        
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+        
+        const rect = canvas.getBoundingClientRect();
+        
+        // Mouse position relative to canvas
+        const mouseX = e.clientX - rect.left;
+        const mouseY = e.clientY - rect.top;
+        
+        // Calculate zoom delta
         const delta = -e.deltaY * 0.001;
         const newScale = Math.min(Math.max(0.1, scale + delta), 5);
+        
+        // Calculate scale factor
+        const scaleFactor = newScale / scale;
+        
+        // Adjust pan offset to zoom towards mouse position
+        const newPanOffsetX = mouseX - (mouseX - panOffset.x) * scaleFactor;
+        const newPanOffsetY = mouseY - (mouseY - panOffset.y) * scaleFactor;
+        
         setScale(newScale);
+        setPanOffset({ x: newPanOffsetX, y: newPanOffsetY });
     };
 
     if (loading) return <div className="board-loading">Загрузка доски...</div>;
@@ -1203,7 +1465,7 @@ const BoardPage = () => {
                 </div>
 
                 <div
-                    className="board-canvas"
+                    className={`board-canvas ${isAddingComment ? 'comment-mode' : ''}`}
                     ref={canvasRef}
                     onMouseDown={(e) => {
                         if (drawingTool) {
@@ -1243,15 +1505,14 @@ const BoardPage = () => {
                         <div className="grid-pattern"></div>
                     </div>
 
-                    {/* Comment popup */}
-                    {showCommentPopup && (
+                    {showCommentInput && (
                         <div
-                            className="comment-popup"
+                            className="comment-input-popup"
                             style={{
                                 position: 'absolute',
                                 left: commentPosition.x,
                                 top: commentPosition.y,
-                                transform: `scale(${1 / scale})`,
+                                transform: 'translate(-50%, -50%)',
                                 transformOrigin: 'center',
                                 zIndex: 1000,
                                 pointerEvents: 'auto'
@@ -1266,7 +1527,12 @@ const BoardPage = () => {
                                     onChange={(e) => setCommentText(e.target.value)}
                                     onKeyDown={(e) => {
                                         if (e.key === 'Enter') handleCreateComment();
-                                        if (e.key === 'Escape') handleCancelComment();
+                                        else if (e.key === 'Escape') {
+                                            setShowCommentInput(false);
+                                            setIsAddingComment(false);
+                                            setSelectedTool(null);
+                                            setCommentText('');
+                                        }
                                     }}
                                     autoFocus
                                 />
@@ -1822,8 +2088,14 @@ const BoardPage = () => {
 
                                         {/* Comment element */}
                                         {element.type === 'COMMENT' && (
-                                            <div 
+                                            <div
                                                 className={`comment-element ${expandedCommentId === element.id ? 'expanded' : 'collapsed'} ${element.element?.userId && element.element?.userId !== currentUserId ? 'owned-by-other' : ''}`}
+                                                style={{
+                                                    zIndex: expandedCommentId === element.id ? 1000 : 2
+                                                }}
+                                                onMouseDown={(e) => {
+                                                    e.stopPropagation();
+                                                }}
                                                 onClick={(e) => {
                                                     e.stopPropagation();
                                                     // Toggle expansion
@@ -1831,42 +2103,186 @@ const BoardPage = () => {
                                                 }}
                                             >
                                                 {/* Collapsed state - just avatar */}
-                                                {expandedCommentId !== element.id && (
-                                                    <div className="comment-avatar-collapsed">
-                                                        {(() => {
-                                                            const userId = element.element?.userId;
-                                                            const cachedUser = userId ? userCache[userId] : null;
-                                                            console.log('Rendering collapsed avatar - userId:', userId, 'cachedUser:', cachedUser, 'userName:', element.element?.userName);
-                                                            
-                                                            if (userId && cachedUser?.avatar) {
-                                                                return (
-                                                                    <img 
-                                                                        src={`data:image/png;base64,${cachedUser.avatar}`}
-                                                                        alt={cachedUser.nickname || 'User'}
-                                                                    />
-                                                                );
-                                                            } else {
-                                                                const displayName = cachedUser?.nickname || element.element?.userName || 'U';
-                                                                console.log('Using fallback - displayName:', displayName);
-                                                                return (
-                                                                    <span>
-                                                                        {displayName.charAt(0).toUpperCase()}
-                                                                    </span>
-                                                                );
-                                                            }
-                                                        })()}
-                                                    </div>
-                                                )}
+                                                <div className="comment-avatar-collapsed">
+                                                    {(() => {
+                                                        const userId = element.element?.userId;
+                                                        const cachedUser = userId ? userCache[userId] : null;
+                                                        
+                                                        if (userId && cachedUser?.avatar) {
+                                                            return (
+                                                                <img 
+                                                                    src={`data:image/png;base64,${cachedUser.avatar}`}
+                                                                    alt={cachedUser.nickname || 'User'}
+                                                                />
+                                                            );
+                                                        } else {
+                                                            const displayName = cachedUser?.nickname || element.element?.userName || 'U';
+                                                            return (
+                                                                <span>
+                                                                    {displayName.charAt(0).toUpperCase()}
+                                                                </span>
+                                                            );
+                                                        }
+                                                    })()}
+                                                </div>
                                                 
-                                                {/* Expanded state - full comment */}
-                                                {expandedCommentId === element.id && (
-                                                    <div className="comment-content-expanded">
-                                                        <div className="comment-header">
-                                                            <div className="comment-avatar">
+                                                {/* Hover preview panel */}
+                                                <div 
+                                                    className="comment-hover-preview"
+                                                    onClick={(e) => e.stopPropagation()}
+                                                >
+                                                    <div className="comment-thread-item">
+                                                        <div className="comment-thread-avatar">
+                                                            {(() => {
+                                                                const userId = element.element?.userId;
+                                                                const cachedUser = userId ? userCache[userId] : null;
+                                                                
+                                                                if (userId && cachedUser?.avatar) {
+                                                                    return (
+                                                                        <img 
+                                                                            src={`data:image/png;base64,${cachedUser.avatar}`}
+                                                                            alt={cachedUser.nickname || 'User'}
+                                                                        />
+                                                                    );
+                                                                } else {
+                                                                    const displayName = cachedUser?.nickname || element.element?.userName || 'U';
+                                                                    return (
+                                                                        <span>
+                                                                            {displayName.charAt(0).toUpperCase()}
+                                                                        </span>
+                                                                    );
+                                                                }
+                                                            })()}
+                                                        </div>
+                                                        <div className="comment-thread-content">
+                                                            <div className="comment-thread-user-row">
+                                                                <span className="comment-thread-username">
+                                                                    {(() => {
+                                                                        const userId = element.element?.userId;
+                                                                        const cachedUser = userId ? userCache[userId] : null;
+                                                                        return cachedUser?.nickname || element.element?.userName || 'User';
+                                                                    })()}
+                                                                </span>
+                                                                <div className="comment-thread-datetime">
+                                                                    {element.element?.createdAt ? new Date(element.element.createdAt).toLocaleDateString('ru-RU') : ''}{' '}
+                                                                    {element.element?.createdAt ? new Date(element.element.createdAt).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }) : ''}
+                                                                </div>
+                                                            </div>
+                                                            <div className="comment-thread-message">
+                                                                {element.element?.message || ''}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div className="comment-thread-replies">
+                                                        <button
+                                                            className="comment-thread-reply-btn"
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                // Expand to full thread and start reply mode
+                                                                setExpandedCommentId(element.id);
+                                                                setReplyingToCommentId(element.id);
+                                                                setReplyText('');
+                                                                // Focus will be handled by useEffect
+                                                            }}
+                                                        >
+                                                            {element.element?.replies?.length || 0} ответов
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                                
+                                                {/* Expanded thread panel */}
+                                                <div 
+                                                    className="comment-thread-expanded"
+                                                    onClick={(e) => e.stopPropagation()}
+                                                >
+                                                    {/* Header with menu */}
+                                                    <div className="comment-thread-header">
+                                                        <div style={{ flex: 1 }} />
+                                                        {canDeleteComment(element.element?.userId) && (
+                                                            <div className="comment-thread-menu-wrapper" style={{ position: 'relative' }}>
+                                                                <button 
+                                                                    className="comment-thread-menu"
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        setCommentMenuId(commentMenuId === element.id ? null : element.id);
+                                                                    }}
+                                                                >
+                                                                    •••
+                                                                </button>
+                                                                {commentMenuId === element.id && (
+                                                                    <div 
+                                                                        className="comment-delete-menu"
+                                                                        onClick={(e) => e.stopPropagation()}
+                                                                    >
+                                                                        <button
+                                                                            className="comment-delete-btn"
+                                                                            onClick={(e) => {
+                                                                                e.stopPropagation();
+                                                                                handleDeleteComment(element.id);
+                                                                            }}
+                                                                        >
+                                                                            Удалить
+                                                                        </button>
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                    
+                                                    {/* Original comment */}
+                                                    <div className="comment-thread-item">
+                                                        <div className="comment-thread-avatar">
+                                                            {(() => {
+                                                                const userId = element.element?.userId;
+                                                                const cachedUser = userId ? userCache[userId] : null;
+                                                                
+                                                                if (userId && cachedUser?.avatar) {
+                                                                    return (
+                                                                        <img 
+                                                                            src={`data:image/png;base64,${cachedUser.avatar}`}
+                                                                            alt={cachedUser.nickname || 'User'}
+                                                                        />
+                                                                    );
+                                                                } else {
+                                                                    const displayName = cachedUser?.nickname || element.element?.userName || 'U';
+                                                                    return (
+                                                                        <span>
+                                                                            {displayName.charAt(0).toUpperCase()}
+                                                                        </span>
+                                                                    );
+                                                                }
+                                                            })()}
+                                                        </div>
+                                                        <div className="comment-thread-content">
+                                                            <div className="comment-thread-user-row">
+                                                                <span className="comment-thread-username">
+                                                                    {(() => {
+                                                                        const userId = element.element?.userId;
+                                                                        const cachedUser = userId ? userCache[userId] : null;
+                                                                        return cachedUser?.nickname || element.element?.userName || 'User';
+                                                                    })()}
+                                                                </span>
+                                                                <div className="comment-thread-datetime">
+                                                                    {element.element?.createdAt ? new Date(element.element.createdAt).toLocaleDateString('ru-RU') : ''}{' '}
+                                                                    {element.element?.createdAt ? new Date(element.element.createdAt).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }) : ''}
+                                                                </div>
+                                                            </div>
+                                                            <div className="comment-thread-message">
+                                                                {element.element?.message || ''}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    
+                                                    {/* Replies */}
+                                                    {element.element?.replies && element.element.replies.length > 0 && (
+                                                        <div className="comment-divider"></div>
+                                                    )}
+                                                    {element.element?.replies?.map((reply, index) => (
+                                                        <div key={index} className="comment-thread-item">
+                                                            <div className="comment-thread-avatar">
                                                                 {(() => {
-                                                                    const userId = element.element?.userId;
+                                                                    const userId = reply.userId;
                                                                     const cachedUser = userId ? userCache[userId] : null;
-                                                                    console.log('Rendering expanded avatar - userId:', userId, 'cachedUser:', cachedUser);
                                                                     
                                                                     if (userId && cachedUser?.avatar) {
                                                                         return (
@@ -1876,7 +2292,7 @@ const BoardPage = () => {
                                                                             />
                                                                         );
                                                                     } else {
-                                                                        const displayName = cachedUser?.nickname || element.element?.userName || 'U';
+                                                                        const displayName = cachedUser?.nickname || reply.userName || 'U';
                                                                         return (
                                                                             <span>
                                                                                 {displayName.charAt(0).toUpperCase()}
@@ -1885,48 +2301,83 @@ const BoardPage = () => {
                                                                     }
                                                                 })()}
                                                             </div>
-                                                            <div className="comment-user-info">
-                                                                <span className="comment-username">
-                                                                    {(() => {
-                                                                        const userId = element.element?.userId;
-                                                                        const cachedUser = userId ? userCache[userId] : null;
-                                                                        const displayName = cachedUser?.nickname || element.element?.userName || 'User';
-                                                                        console.log('Displaying username - userId:', userId, 'displayName:', displayName);
-                                                                        return displayName;
-                                                                    })()}
-                                                                </span>
-                                                            </div>
-                                                            <div className="comment-datetime">
-                                                                <div className="comment-date">
-                                                                    {element.element?.createdAt ? new Date(element.element.createdAt).toLocaleDateString('ru-RU') : ''}
+                                                            <div className="comment-thread-content">
+                                                                <div className="comment-thread-user-row">
+                                                                    <span className="comment-thread-username">
+                                                                        {(() => {
+                                                                            const userId = reply.userId;
+                                                                            const cachedUser = userId ? userCache[userId] : null;
+                                                                            return cachedUser?.nickname || reply.userName || 'User';
+                                                                        })()}
+                                                                    </span>
+                                                                    <div className="comment-thread-datetime">
+                                                                        {reply.createdAt ? new Date(reply.createdAt).toLocaleDateString('ru-RU') : ''}{' '}
+                                                                        {reply.createdAt ? new Date(reply.createdAt).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }) : ''}
+                                                                    </div>
                                                                 </div>
-                                                                <div className="comment-time">
-                                                                    {element.element?.createdAt ? new Date(element.element.createdAt).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }) : ''}
+                                                                <div className="comment-thread-message">
+                                                                    {reply.message || ''}
                                                                 </div>
                                                             </div>
                                                         </div>
-                                                        <div className="comment-message">
-                                                            {element.element?.message || ''}
-                                                        </div>
-                                                        <div className="comment-footer">
+                                                    ))}
+                                                    
+                                                    {/* Reply button or input */}
+                                                    <div className="comment-thread-replies">
+                                                        {replyingToCommentId === element.id ? (
+                                                            <>
+                                                                <input
+                                                                    type="text"
+                                                                    className="comment-reply-input"
+                                                                    placeholder="Написать комментарий..."
+                                                                    value={replyText}
+                                                                    onChange={(e) => setReplyText(e.target.value)}
+                                                                    onKeyDown={(e) => {
+                                                                        if (e.key === 'Enter' && !e.shiftKey) {
+                                                                            e.preventDefault();
+                                                                            handleReplySubmit(element.id);
+                                                                        }
+                                                                    }}
+                                                                    onMouseDown={(e) => e.stopPropagation()}
+                                                                    autoFocus
+                                                                />
+                                                                <button
+                                                                    className="comment-reply-submit-btn"
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        handleReplySubmit(element.id);
+                                                                    }}
+                                                                >
+                                                                    Отправить
+                                                                </button>
+                                                                <button
+                                                                    className="comment-reply-cancel-btn"
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        handleCancelReply();
+                                                                    }}
+                                                                >
+                                                                    Отмена
+                                                                </button>
+                                                            </>
+                                                        ) : (
                                                             <button
-                                                                className="comment-reply-btn"
+                                                                className="comment-thread-reply-btn"
                                                                 onClick={(e) => {
                                                                     e.stopPropagation();
-                                                                    // TODO: Implement reply functionality
+                                                                    setReplyingToCommentId(element.id);
+                                                                    setReplyText('');
                                                                 }}
                                                             >
                                                                 Оставить комментарий
                                                             </button>
-                                                            <span className="comment-replies-count">
-                                                                {element.element?.replies?.length || 0} ответов
-                                                            </span>
-                                                        </div>
+                                                        )}
                                                     </div>
-                                                )}
+                                                </div>
                                             </div>
                                         )}
-                                        {isSelected && <div className="selection-border"></div>}
+                                        {/* Selection border - exclude comments */}
+                                        {isSelected && element.type !== 'COMMENT' && <div className="selection-border"></div>}
 
                                         {/* Invisible hitbox for DRAWING elements */}
                                         {element.type === 'DRAWING' && (
@@ -1943,8 +2394,8 @@ const BoardPage = () => {
                                             />
                                         )}
 
-                                        {/* Маркеры масштабирования */}
-                                        {isSelected && !isDraggingElement && (
+                                        {/* Маркеры масштабирования - exclude comments */}
+                                        {isSelected && !isDraggingElement && element.type !== 'COMMENT' && (
                                             <>
                                                 <div className="resize-handle nw" onMouseDown={(e) => handleHandleMouseDown(e, 'nw', element.id)} />
                                                 <div className="resize-handle n" onMouseDown={(e) => handleHandleMouseDown(e, 'n', element.id)} />

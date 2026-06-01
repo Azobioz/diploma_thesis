@@ -85,11 +85,22 @@ public class BoardElementMapper {
             }
             case COMMENT -> {
                 CommentElement comment = boardElement.getCommentElement();
+                List<Map<String, Object>> repliesList = List.of();
+                if (comment.getComments() != null) {
+                    repliesList = comment.getComments().stream()
+                            .map(reply -> Map.<String, Object>of(
+                                    "id", reply.getId(),
+                                    "message", reply.getMessage() != null ? reply.getMessage() : "",
+                                    "userId", reply.getUserId(),
+                                    "createdAt", reply.getCreatedAt()
+                            ))
+                            .toList();
+                }
                 yield Map.of(
                         "message", comment.getMessage() != null ? comment.getMessage() : "",
                         "userId", comment.getUserId(),
                         "createdAt", comment.getCreatedAt(),
-                        "replies", comment.getComments() != null ? comment.getComments() : List.of()
+                        "replies", repliesList
                 );
             }
             default -> Map.of();
