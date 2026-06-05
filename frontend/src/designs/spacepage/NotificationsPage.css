@@ -1,0 +1,200 @@
+/* Страница уведомлений */
+.notifications-page {
+    min-height: 100vh;
+    background-color: #4682A9;
+    display: flex;
+    flex-direction: column;
+}
+
+.notifications-loading {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    color: #fff;
+    font-size: 24px;
+    background-color: #4682A9;
+}
+
+/* Шапка */
+.notifications-header {
+    background-color: #2D6A8F;
+    height: 70px;
+    display: flex;
+    align-items: center;
+    padding: 0 30px;
+}
+
+.notifications-header-logo {
+    font-size: 32px;
+    font-weight: bold;
+    color: #ffffff;
+    cursor: pointer;
+}
+
+/* Основной контент */
+.notifications-content {
+    max-width: 800px;
+    width: 100%;
+    margin: 40px auto;
+    background-color: rgba(70, 130, 169, 0.85);
+    border-radius: 16px;
+    padding: 30px 40px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+    color: #ffffff;
+}
+
+/* Фильтр строка */
+.notifications-filter-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+}
+
+.notifications-title {
+    font-size: 22px;
+    font-weight: 600;
+    color: #ffffff;
+}
+
+.notifications-space-selector {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    position: relative;
+}
+
+.notifications-from-label {
+    font-size: 18px;
+    color: #ffffff;
+}
+
+.notifications-space-dropdown-trigger {
+    background-color: #ffffff;
+    color: #1a1a1a;
+    border-radius: 8px;
+    padding: 6px 16px;
+    font-size: 16px;
+    cursor: pointer;
+    min-width: 140px;
+    text-align: center;
+    user-select: none;
+    font-weight: 500;
+}
+
+.notifications-space-dropdown {
+    position: absolute;
+    top: calc(100% + 6px);
+    right: 0;
+    background-color: #ffffff;
+    color: #1a1a1a;
+    border-radius: 8px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+    min-width: 180px;
+    z-index: 100;
+    overflow: hidden;
+}
+
+.notifications-space-option {
+    padding: 10px 18px;
+    cursor: pointer;
+    font-size: 15px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: background-color 0.15s;
+}
+
+.notifications-space-option:hover {
+    background-color: #f0f0f0;
+}
+
+.notifications-space-option.active {
+    background-color: #e8e8e8;
+    font-weight: 600;
+}
+
+.notifications-check {
+    font-size: 14px;
+    color: #333;
+}
+
+/* Разделитель */
+.notifications-divider {
+    height: 2px;
+    background-color: rgba(255, 255, 255, 0.5);
+    margin: 10px 0 20px 0;
+    border-radius: 2px;
+}
+
+/* Пустое состояние */
+.notifications-empty {
+    text-align: center;
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 18px;
+    padding: 40px 0;
+}
+
+/* Список уведомлений */
+.notifications-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+}
+
+/* Один элемент уведомления */
+.notification-item {
+    position: relative;
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    padding: 14px 0;
+}
+
+.notification-icon {
+    font-size: 24px;
+    color: #ffffff;
+    flex-shrink: 0;
+    width: 32px;
+    text-align: center;
+    padding-top: 2px;
+}
+
+.notification-body {
+    flex: 1;
+}
+
+.notification-message {
+    font-size: 15px;
+    color: #ffffff;
+    line-height: 1.5;
+}
+
+.notification-date {
+    font-size: 13px;
+    color: rgba(255, 255, 255, 0.75);
+    white-space: pre-line;
+    text-align: right;
+    flex-shrink: 0;
+    min-width: 70px;
+}
+
+.notification-item-divider {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    border-radius: 1px;
+}
+
+/* Непрочитанное — красная линия */
+.notification-item-divider--unread {
+    background: linear-gradient(to right, #e05c6e, transparent);
+}
+
+/* Прочитанное — синяя линия */
+.notification-item-divider--read {
+    background: linear-gradient(to right, #64A1BA, transparent);
+}

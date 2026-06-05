@@ -12,6 +12,7 @@
             <option value="$PROJECT_DIR$/account-service" />
             <option value="$PROJECT_DIR$/aggregator-service" />
             <option value="$PROJECT_DIR$/board_service" />
+            <option value="$PROJECT_DIR$/notification-service" />
             <option value="$PROJECT_DIR$/task-service" />
           </set>
         </option>

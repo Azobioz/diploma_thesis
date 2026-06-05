@@ -1,10 +1,14 @@
 package com.azobioz.account.model;
 
 import jakarta.persistence.*;
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.ToString;
 
 @Entity
-@Data
+@Getter
+@Setter
+@ToString(exclude = "user")
 @Table(name = "user_setting")
 public class UserSetting {
 

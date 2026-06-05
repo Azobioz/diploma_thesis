@@ -3,19 +3,24 @@ package com.azobioz.board.service;
 import com.azobioz.board.dto.invite.CreateBoardInvitationRequest;
 import com.azobioz.board.dto.invite.CreateInvitationRequest;
 import com.azobioz.board.dto.invite.InvitationLinkResponse;
+import com.azobioz.board.event.UserAddedToSpaceEvent;
 import com.azobioz.board.model.*;
 import com.azobioz.board.repository.*;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class InvitationService {
 
     private final SpaceInvitationRepository invitationRepository;
@@ -24,6 +29,9 @@ public class InvitationService {
     private final RoleRepository roleRepository;
     private final UserInBoardRepository userInBoardRepository;
     private final BoardRepository boardRepository;
+    private final KafkaTemplate<String, UserAddedToSpaceEvent> kafkaTemplate;
+
+    private static final String USER_ADDED_TOPIC = "user-added-to-space";
 
     @Value("${frontend.base-url:http://localhost:3000}")
     private String frontendBaseUrl;
@@ -84,6 +92,31 @@ public class InvitationService {
             newMember.setRole(roleRepository.findByRoleType(RoleType.MEMBER)
                     .orElseThrow(() -> new RuntimeException("Role MEMBER not found")));
             userInSpaceRepository.save(newMember);
+
+            // Находим создателя пространства и публикуем Kafka-событие асинхронно.
+            // CompletableFuture.runAsync() гарантирует, что HTTP-поток не блокируется
+            // даже если Kafka недоступен (max.block.ms перестаёт влиять на latency запроса).
+            userInSpaceRepository.findAll().stream()
+                    .filter(u -> u.getSpace().getId().equals(spaceId)
+                            && u.getRole().getRoleType() == RoleType.CREATOR_OF_SPACE)
+                    .findFirst()
+                    .ifPresent(creator -> {
+                        UserAddedToSpaceEvent event = new UserAddedToSpaceEvent(
+                                spaceId,
+                                space.getName(),
+                                userId,
+                                "User " + userId,
+                                creator.getUserId()
+                        );
+                        CompletableFuture.runAsync(() -> {
+                            try {
+                                kafkaTemplate.send(USER_ADDED_TOPIC, String.valueOf(spaceId), event);
+                                log.info("Published user-added-to-space event for spaceId={}, userId={}", spaceId, userId);
+                            } catch (Exception kafkaEx) {
+                                log.warn("Failed to publish Kafka event (Kafka unavailable?): {}", kafkaEx.getMessage());
+                            }
+                        });
+                    });
         }
 
         // Если приглашение типа BOARD - добавляем пользователя в указанные доски

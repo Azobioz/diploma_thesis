@@ -1,14 +1,12 @@
 FROM gradle:8.8-jdk21 AS builder
 WORKDIR /app
+COPY build.gradle .
 COPY src src/
-RUN gradle bootJar
+RUN echo "rootProject.name = 'aggregator-service'" > settings.gradle && \
+    gradle bootJar --no-daemon
 
 FROM eclipse-temurin:21-jre-alpine
 WORKDIR /app
-COPY --from=builder --chown=spring:spring /app/build/libs/*.jar app.jar
-EXPOSE 8080
-
+COPY --from=builder /app/build/libs/*.jar app.jar
+EXPOSE 8081
 ENTRYPOINT ["java", "-jar", "app.jar"]
-
-
-

@@ -9,5 +9,7 @@ public record CreateArrowElementRequest(int startX,
                                         int z,
                                         int width,
                                         int height,
-                                        String color) {
+                                        String color,
+                                        String arrowType,
+                                        String strokeStyle) {
 }

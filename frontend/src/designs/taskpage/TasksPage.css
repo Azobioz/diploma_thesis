@@ -25,18 +25,62 @@
 }
 
 .task-card-completed {
-    background-color: #4CAF50 !important; /* Зеленый фон */
+    background-color: #4CAF50 !important;
 }
 
 .task-card-completed .task-title {
     color: white;
-    text-decoration: line-through; /* Зачеркнутый текст */
-    opacity: 0.9;
+    /* зачёркивание убрано */
 }
 
 .task-card-completed .task-deadline {
     background-color: rgba(255, 255, 255, 0.2);
     color: white;
+}
+
+/* Нижняя строка завершённой карточки */
+.task-completed-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 14px;
+}
+
+/* Pill-кнопка с галочкой */
+.task-completed-toggle {
+    background: transparent;
+    border: 2px solid rgba(255, 255, 255, 0.85);
+    border-radius: 20px;
+    padding: 4px 16px;
+    color: white;
+    font-size: 18px;
+    cursor: default;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    line-height: 1;
+}
+
+/* Красная кнопка X */
+.task-delete-btn {
+    background: #e53935;
+    border: none;
+    border-radius: 50%;
+    width: 34px;
+    height: 34px;
+    color: white;
+    cursor: pointer;
+    font-size: 15px;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s;
+    flex-shrink: 0;
+}
+
+.task-delete-btn:hover {
+    background: #c62828;
 }
 
 /* Иконка галочки */
@@ -101,11 +145,11 @@
 }
 
 .context-menu-item.danger {
-    color: #FF6B6B;
+    color: #ffffff;
 }
 
 .context-menu-item.danger:hover {
-    background-color: rgba(255, 107, 107, 0.2);
+    background-color: rgba(255, 255, 255, 0.1);
 }
 
 .context-menu-item i {
@@ -503,12 +547,6 @@
 /* ← ДОБАВЛЕНО: Стили для drag-and-drop */
 .task-card.draggable {
     cursor: grab;
-    transition: transform 0.2s, box-shadow 0.2s;
-}
-
-.task-card.draggable:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 .task-card.draggable:active {

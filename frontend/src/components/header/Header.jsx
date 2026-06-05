@@ -76,6 +76,7 @@ const Header = ({
                     {showNotifications && (
                         <NotificationPanel
                             count={notificationCount}
+                            spaceId={spaceId}
                             onClick={onNotificationClick}
                         />
                     )}

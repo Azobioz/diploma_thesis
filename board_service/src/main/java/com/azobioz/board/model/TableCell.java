@@ -23,6 +23,18 @@ public class TableCell {
     @Column(name = "content")
     private String content;
 
+    @Column(name = "font_size")
+    private Integer fontSize;
+
+    @Column(name = "font_family")
+    private String fontFamily;
+
+    @Column(name = "is_bold")
+    private Boolean isBold;
+
+    @Column(name = "is_underline")
+    private Boolean isUnderline;
+
     @ManyToOne
     @JoinColumn(name = "table_element_id")
     private TableElement tableElement;

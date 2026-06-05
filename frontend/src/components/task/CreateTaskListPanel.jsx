@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 
-const CreateTaskListPanel = ({ isOpen, onClose, onSubmit, boardId }) => {
+const CreateTaskListPanel = ({ isOpen, onClose, onSubmit, boardId, initialName = '' }) => {
     const [listName, setListName] = useState('');
     const [error, setError] = useState('');
     const panelRef = useRef(null);
@@ -30,13 +30,19 @@ const CreateTaskListPanel = ({ isOpen, onClose, onSubmit, boardId }) => {
         };
     }, [isOpen]);
 
-    // Сброс состояния при открытии/закрытии
+    // Заполняем поле при открытии (новое или rename)
     useEffect(() => {
         if (isOpen) {
-            setListName('');
+            setListName(initialName || '');
             setError('');
+            // Выделяем весь текст для удобного редактирования
+            setTimeout(() => {
+                if (inputRef.current) {
+                    inputRef.current.select();
+                }
+            }, 150);
         }
-    }, [isOpen]);
+    }, [isOpen, initialName]);
 
     // Валидация названия списка
     const validateListName = (name) => {

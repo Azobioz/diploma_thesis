@@ -26,6 +26,8 @@ const TasksPage = () => {
 
     const [currentUserId, setCurrentUserId] = useState(null);
     const [isSpaceCreator, setIsSpaceCreator] = useState(false);
+    const [renameListPanel, setRenameListPanel] = useState({ isOpen: false, listId: null, currentName: '' });
+    const [deleteListConfirm, setDeleteListConfirm] = useState({ isOpen: false, listId: null });
 
     // ← ДОБАВЛЕНО: Состояние для drag-and-drop
     const [draggedTask, setDraggedTask] = useState(null);
@@ -161,28 +163,32 @@ const TasksPage = () => {
         setListContextMenu({ isOpen: true, listId, x: rect.left, y: rect.bottom + 5 });
     };
 
-    const handleDeleteList = async () => {
+    const handleDeleteList = () => {
         if (!listContextMenu.listId) return;
-        if (window.confirm('Вы уверены, что хотите удалить этот список?')) {
-            try {
-                const token = localStorage.getItem('accessToken');
-                const response = await fetch(`http://localhost:8081/boardiox/tasklists/${listContextMenu.listId}/delete`, {
-                    method: 'DELETE',
-                    headers: { 'Authorization': `Bearer ${token}` },
-                });
-                if (response.ok) {
-                    setTasksData(prev => ({
-                        ...prev,
-                        tasks: prev.tasks.filter(list => list.taskListId !== listContextMenu.listId)
-                    }));
-                    setListContextMenu(prev => ({ ...prev, isOpen: false }));
-                } else {
-                    alert('Ошибка при удалении списка');
-                }
-            } catch (err) {
-                console.error('Error deleting list:', err);
+        setListContextMenu(prev => ({ ...prev, isOpen: false }));
+        setDeleteListConfirm({ isOpen: true, listId: listContextMenu.listId });
+    };
+
+    const confirmDeleteList = async () => {
+        const listId = deleteListConfirm.listId;
+        setDeleteListConfirm({ isOpen: false, listId: null });
+        try {
+            const token = localStorage.getItem('accessToken');
+            const response = await fetch(`http://localhost:8081/boardiox/tasklists/${listId}/delete`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${token}` },
+            });
+            if (response.ok) {
+                setTasksData(prev => ({
+                    ...prev,
+                    tasks: prev.tasks.filter(list => list.taskListId !== listId)
+                }));
+            } else {
                 alert('Ошибка при удалении списка');
             }
+        } catch (err) {
+            console.error('Error deleting list:', err);
+            alert('Ошибка при удалении списка');
         }
     };
 
@@ -190,11 +196,8 @@ const TasksPage = () => {
         if (!listContextMenu.listId) return;
         const list = tasksData?.tasks?.find(l => l.taskListId === listContextMenu.listId);
         if (!list) return;
-        const newListName = prompt('Введите новое название списка:', list.taskListName);
-        if (newListName && newListName.trim() && newListName.trim() !== list.taskListName) {
-            handleRenameSubmit(listContextMenu.listId, newListName.trim());
-        }
         setListContextMenu(prev => ({ ...prev, isOpen: false }));
+        setRenameListPanel({ isOpen: true, listId: listContextMenu.listId, currentName: list.taskListName });
     };
 
     const handleRenameSubmit = async (listId, newListName) => {
@@ -206,13 +209,15 @@ const TasksPage = () => {
                 body: JSON.stringify({ taskListName: newListName }),
             });
             if (response.ok) {
-                const updatedResponse = await fetch(`http://localhost:8081/boardiox/spaces/${spaceId}/boards/${boardId}/tasks`, {
-                    headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-                });
-                if (updatedResponse.ok) {
-                    const updatedData = await updatedResponse.json();
-                    setTasksData(updatedData);
-                }
+                // Обновляем только название нужного списка, порядок остальных не трогаем
+                setTasksData(prev => ({
+                    ...prev,
+                    tasks: prev.tasks.map(list =>
+                        list.taskListId === listId
+                            ? { ...list, taskListName: newListName }
+                            : list
+                    )
+                }));
             } else {
                 alert('Ошибка при переименовании списка');
             }
@@ -300,6 +305,32 @@ const TasksPage = () => {
         }
     };
 
+    const handleDeleteTask = async (e, taskId, listId) => {
+        e.stopPropagation();
+        if (!window.confirm('Удалить задачу?')) return;
+        try {
+            const token = localStorage.getItem('accessToken');
+            const response = await fetch(`http://localhost:8081/boardiox/tasks/${taskId}/delete`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${token}` },
+            });
+            if (response.ok) {
+                setTasksData(prev => ({
+                    ...prev,
+                    tasks: prev.tasks.map(list =>
+                        list.taskListId === listId
+                            ? { ...list, tasks: list.tasks.filter(t => t.taskId !== taskId) }
+                            : list
+                    )
+                }));
+            } else {
+                alert('Ошибка при удалении задачи');
+            }
+        } catch (err) {
+            console.error('Error deleting task:', err);
+        }
+    };
+
     // ← ДОБАВЛЕНО: Проверка прав на перемещение задачи
     const canMoveTask = (task, sourceListId, targetListId) => {
         if (!currentUserId) return false;
@@ -380,14 +411,14 @@ const TasksPage = () => {
                             // Удаляем из исходного списка
                             return {
                                 ...list,
-                                tasks: list.tasks.filter(t => t.taskId !== draggedTask.taskId)
+                                tasks: (list.tasks || []).filter(t => t.taskId !== draggedTask.taskId)
                             };
                         }
                         if (list.taskListId === targetListId) {
                             // Добавляем в целевой список
                             return {
                                 ...list,
-                                tasks: [...list.tasks, draggedTask.task]
+                                tasks: [...(list.tasks || []), draggedTask.task]
                             };
                         }
                         return list;
@@ -490,17 +521,14 @@ const TasksPage = () => {
                                                 onDragEnd={handleDragEnd}
                                             >
                                                 <p className="task-title">{task.taskName}</p>
-                                                <div className="task-footer">
-                                                    {task.deadline && (
-                                                        <span className="task-deadline">
-                                                            <i className="bi bi-clock"></i>
-                                                            {new Date(task.deadline).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' })}
-                                                        </span>
-                                                    )}
-                                                    {task.isTaskCompleted ? (
-                                                        <div className="task-completed-icon"><i className="bi bi-check-circle-fill"></i></div>
-                                                    ) : (
-                                                        task.createByUserAvatar && (
+
+                                                {task.isTaskCompleted ? (
+                                                    // Дизайн завершённой задачи
+                                                    <div className="task-completed-footer">
+                                                        <div className="task-completed-toggle">
+                                                            <i className="bi bi-check-lg"></i>
+                                                        </div>
+                                                        {task.createByUserAvatar && (
                                                             <div className="task-creator-avatar-in-task-card">
                                                                 {task.createByUserAvatar.avatar ? (
                                                                     <img src={`data:image/png;base64,${task.createByUserAvatar.avatar}`} alt="Creator" />
@@ -508,9 +536,28 @@ const TasksPage = () => {
                                                                     <span>{(task.createByUserAvatar.nickname || '?').charAt(0).toUpperCase()}</span>
                                                                 )}
                                                             </div>
-                                                        )
-                                                    )}
-                                                </div>
+                                                        )}
+                                                    </div>
+                                                ) : (
+                                                    // Обычный дизайн незавершённой задачи
+                                                    <div className="task-footer">
+                                                        {task.deadline && (
+                                                            <span className="task-deadline">
+                                                                <i className="bi bi-clock"></i>
+                                                                {new Date(task.deadline).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' })}
+                                                            </span>
+                                                        )}
+                                                        {task.createByUserAvatar && (
+                                                            <div className="task-creator-avatar-in-task-card">
+                                                                {task.createByUserAvatar.avatar ? (
+                                                                    <img src={`data:image/png;base64,${task.createByUserAvatar.avatar}`} alt="Creator" />
+                                                                ) : (
+                                                                    <span>{(task.createByUserAvatar.nickname || '?').charAt(0).toUpperCase()}</span>
+                                                                )}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                )}
                                             </div>
                                         );
                                     })}
@@ -541,6 +588,31 @@ const TasksPage = () => {
             )}
 
             <CreateTaskListPanel isOpen={isCreateListPanelOpen} onClose={() => setIsCreateListPanelOpen(false)} onSubmit={handleCreateTaskList} boardId={boardId} />
+
+            {/* Панель подтверждения удаления списка */}
+            {deleteListConfirm.isOpen && (
+                <div className="delete-confirm-overlay" onClick={() => setDeleteListConfirm({ isOpen: false, listId: null })}>
+                    <div className="delete-confirm-panel" onClick={e => e.stopPropagation()}>
+                        <p className="delete-confirm-text">Вы уверены, что хотите удалить этот список задач?</p>
+                        <div className="delete-confirm-buttons">
+                            <button className="btn-confirm-delete" onClick={confirmDeleteList}>Да</button>
+                            <button className="btn-cancel-delete" onClick={() => setDeleteListConfirm({ isOpen: false, listId: null })}>Нет</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+            <CreateTaskListPanel
+                isOpen={renameListPanel.isOpen}
+                onClose={() => setRenameListPanel({ isOpen: false, listId: null, currentName: '' })}
+                onSubmit={({ listName }) => {
+                    if (listName.trim() && listName.trim() !== renameListPanel.currentName) {
+                        handleRenameSubmit(renameListPanel.listId, listName.trim());
+                    }
+                    setRenameListPanel({ isOpen: false, listId: null, currentName: '' });
+                }}
+                boardId={boardId}
+                initialName={renameListPanel.currentName}
+            />
             <CreateTaskPanel isOpen={isCreateTaskPanelOpen} onClose={() => setIsCreateTaskPanelOpen(false)} onSubmit={handleCreateTaskSubmit} taskListId={selectedListId} />
             <TaskDetailPanel
                 isOpen={isTaskDetailOpen}

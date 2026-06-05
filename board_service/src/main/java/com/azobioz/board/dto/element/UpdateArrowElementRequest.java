@@ -9,5 +9,7 @@ public record UpdateArrowElementRequest(Integer startX,
                                         Integer z,
                                         Integer width,
                                         Integer height,
-                                        String color
+                                        String color,
+                                        String arrowType,
+                                        String strokeStyle
 ) { }

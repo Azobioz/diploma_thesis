@@ -131,61 +131,52 @@ const InvitePanel = ({
         <div className="invite-panel-overlay" onClick={onClose}>
             <div className="invite-panel" onClick={e => e.stopPropagation()}>
                 {/* Выбор типа приглашения */}
+                {/* Строка выбора типа — кнопки не двигаются */}
                 <div className="invite-type-row">
                     <span className="invite-label">Пригласить в</span>
-                    <div className="invite-toggle">
-                        {/* Для создателя пространства - кнопка пространства */}
-                        {isSpaceCreator && (
-                            <button
-                                className={`toggle-btn ${inviteType === 'space' ? 'active' : ''}`}
-                                onClick={() => { setInviteType('space'); setShowBoardDropdown(false); }}
-                            >
-                                {spaceName}
-                            </button>
-                        )}
 
-                        {/* Кнопка выбора досок */}
-                        <div className="board-select-wrapper" ref={boardDropdownRef}>
-                            <button
-                                className={`toggle-btn ${inviteType === 'board' ? 'active' : ''}`}
-                                onClick={() => {
-                                    setInviteType('board');
-                                    setShowBoardDropdown(!showBoardDropdown);
-                                }}
-                            >
-                                {inviteType === 'board' ? getSelectedBoardsText() : 'Доску...'}
-                            </button>
+                    {isSpaceCreator && (
+                        <button
+                            className={`toggle-btn ${inviteType === 'space' ? 'active' : ''}`}
+                            onClick={() => { setInviteType('space'); setShowBoardDropdown(false); }}
+                        >
+                            {spaceName}
+                        </button>
+                    )}
 
-                            {/* Dropdown со списком досок */}
-                            {showBoardDropdown && inviteType === 'board' && (
-                                <div className="board-dropdown">
-                                    <div className="board-dropdown-list">
-                                        {availableBoards.map(board => (
-                                            <div
-                                                key={board.boardId}
-                                                className="board-dropdown-item"
-                                            >
-                                                <span
-                                                    className="board-name"
-                                                    onClick={() => handleBoardToggle(board.boardId)}
-                                                    style={{ cursor: 'pointer', flex: 1 }}
-                                                >
-                                                    {board.boardName}
-                                                </span>
-                                                <input
-                                                    type="checkbox"
-                                                    checked={selectedBoardIds.includes(board.boardId)}
-                                                    onChange={() => handleBoardToggle(board.boardId)}
-                                                    onClick={(e) => e.stopPropagation()}
-                                                />
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-                    </div>
+                    <button
+                        className={`toggle-btn ${inviteType === 'board' ? 'active' : ''}`}
+                        onClick={() => {
+                            setInviteType('board');
+                            setShowBoardDropdown(!showBoardDropdown);
+                        }}
+                    >
+                        Доску...
+                    </button>
                 </div>
+
+                {/* Список досок — появляется ниже строки, не двигает кнопки */}
+                {showBoardDropdown && (
+                    <div className="board-inline-list" ref={boardDropdownRef}>
+                        {availableBoards.map(board => (
+                            <div key={board.boardId} className="board-dropdown-item">
+                                <span
+                                    className="board-name"
+                                    onClick={() => handleBoardToggle(board.boardId)}
+                                    style={{ cursor: 'pointer', flex: 1 }}
+                                >
+                                    {board.boardName}
+                                </span>
+                                <input
+                                    type="checkbox"
+                                    checked={selectedBoardIds.includes(board.boardId)}
+                                    onChange={() => handleBoardToggle(board.boardId)}
+                                    onClick={(e) => e.stopPropagation()}
+                                />
+                            </div>
+                        ))}
+                    </div>
+                )}
 
                 {/* Срок действия */}
                 <div className="invite-expiration-row">

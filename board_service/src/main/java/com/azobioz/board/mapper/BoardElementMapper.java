@@ -33,7 +33,9 @@ public class BoardElementMapper {
                         "startX", arrow.getStartX(),
                         "startY", arrow.getStartY(),
                         "endX", arrow.getEndX(),
-                        "endY", arrow.getEndY()
+                        "endY", arrow.getEndY(),
+                        "arrowType", arrow.getArrowType() != null ? arrow.getArrowType() : "SINGLE",
+                        "strokeStyle", arrow.getStrokeStyle() != null ? arrow.getStrokeStyle() : "solid"
                 );
             }
             case TEXT -> {
@@ -53,7 +55,11 @@ public class BoardElementMapper {
                                 cell.getId(),
                                 cell.getRow(),
                                 cell.getCol(),
-                                cell.getContent() != null ? cell.getContent() : ""
+                                cell.getContent() != null ? cell.getContent() : "",
+                                cell.getFontSize(),
+                                cell.getFontFamily(),
+                                cell.getIsBold(),
+                                cell.getIsUnderline()
                         ))
                         .toList();
                 yield Map.of(
@@ -92,7 +98,7 @@ public class BoardElementMapper {
                                     "id", reply.getId(),
                                     "message", reply.getMessage() != null ? reply.getMessage() : "",
                                     "userId", reply.getUserId(),
-                                    "createdAt", reply.getCreatedAt()
+                                    "createdAt", reply.getCreatedAt() != null ? reply.getCreatedAt().toString() : ""
                             ))
                             .toList();
                 }

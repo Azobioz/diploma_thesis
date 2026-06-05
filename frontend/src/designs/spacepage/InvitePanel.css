@@ -13,13 +13,14 @@
     background: #64A1BA;
     padding: 25px;
     border-radius: 16px;
-    width: auto;
+    width: 420px;
     color: white;
     display: flex;
     flex-direction: column;
     gap: 20px;
     box-shadow: 0 10px 30px rgba(0,0,0,0.3);
     animation: slideUp 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+    overflow: visible;
 }
 
 .invite-type-row, .invite-expiration-row {
@@ -28,29 +29,23 @@
     gap: 12px;
     font-size: 18px;
     font-weight: 500;
-}
-
-.invite-toggle {
-    display: flex;
-    background: #2D2D30;
-    border-radius: 10px;
-    padding: 4px;
-    gap: 4px;
+    flex-wrap: nowrap;
+    position: relative;
 }
 
 .toggle-btn {
-    background: transparent;
+    background: #2D2D30;
     border: none;
-    color: #ccc;
+    color: #ffffff;
     padding: 8px 16px;
     border-radius: 8px;
     cursor: pointer;
-    transition: all 0.2s;
     font-size: 16px;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    max-width: 200px;
+    max-width: 160px;
+    flex-shrink: 0;
 }
 
 .toggle-btn.active {
@@ -58,30 +53,13 @@
     color: white;
 }
 
-/* Wrapper для выбора досок */
-.board-select-wrapper {
-    position: relative;
-}
-
-/* Dropdown со списком досок */
-.board-dropdown {
-    position: absolute;
-    top: calc(100% + 5px);
-    left: 0;
+/* Inline список досок — появляется как часть панели ниже строки */
+.board-inline-list {
     background: #2D2D30;
     border-radius: 8px;
-    min-width: 200px;
-    max-height: 250px;
+    max-height: 220px;
     overflow-y: auto;
-    z-index: 1000;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.4);
-    animation: fadeIn 0.2s ease;
-}
-
-.board-dropdown-list {
-    display: flex;
-    flex-direction: column;
-    padding: 8px 0;
+    animation: fadeIn 0.15s ease;
 }
 
 .board-dropdown-item {
@@ -143,12 +121,6 @@
     align-items: center;
     justify-content: center;
     gap: 10px;
-    transition: all 0.2s;
-}
-
-.copy-invite-btn:hover:not(:disabled) {
-    background: #C9C9C9;
-    transform: translateY(-1px);
 }
 
 .copy-invite-btn:disabled {

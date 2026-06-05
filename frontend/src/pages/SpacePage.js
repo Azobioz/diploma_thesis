@@ -20,6 +20,38 @@ const SpacePage = () => {
     const [filter, setFilter] = useState('all');
     const [sort, setSort] = useState('recent');
     const [spacesOwnership, setSpacesOwnership] = useState({});
+    const [unreadCount, setUnreadCount] = useState(0);
+
+    // Загрузка счётчика непрочитанных уведомлений
+    useEffect(() => {
+        const fetchUnreadCount = async () => {
+            if (!spaceId) return;
+            const token = localStorage.getItem('accessToken');
+            if (!token) return;
+            try {
+                const res = await fetch(
+                    `http://localhost:8081/boardiox/spaces/${spaceId}/notifications`,
+                    { headers: { 'Authorization': `Bearer ${token}` } }
+                );
+                if (res.ok) {
+                    const data = await res.json();
+                    const count = (data || []).filter(n => !n.read).length;
+                    setUnreadCount(count);
+                }
+            } catch (err) {
+                // игнорируем ошибки счётчика
+            }
+        };
+
+        fetchUnreadCount();
+
+        // Обновляем счётчик при возврате на вкладку (после посещения страницы уведомлений)
+        const handleVisibilityChange = () => {
+            if (!document.hidden) fetchUnreadCount();
+        };
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+        return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+    }, [spaceId]);
 
     // Загрузка досок пользователя где он CREATOR_OF_BOARD
     useEffect(() => {
@@ -385,7 +417,7 @@ const SpacePage = () => {
                 currentUserId={spaceData.currentUser?.userId}
                 currentUserAvatar={spaceData.currentUser?.avatar}
                 currentUserName={spaceData.currentUser?.nickname}
-                notificationCount={0}
+                notificationCount={unreadCount}
                 onInviteClick={handleInviteClick}
                 userBoards={userBoards}
                 allSpaceBoards={allSpaceBoards}

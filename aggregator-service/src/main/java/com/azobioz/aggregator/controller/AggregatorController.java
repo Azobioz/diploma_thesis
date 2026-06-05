@@ -2,6 +2,8 @@ package com.azobioz.aggregator.controller;
 
 import com.azobioz.aggregator.dto.board.*;
 import com.azobioz.aggregator.dto.board.element.*;
+import com.azobioz.aggregator.dto.notification.NotificationDto;
+import com.azobioz.aggregator.dto.board.SpaceDto;
 import com.azobioz.aggregator.dto.page.SpaceMainPageDto;
 import com.azobioz.aggregator.dto.page.TaskMiniPageDto;
 import com.azobioz.aggregator.dto.page.TasksPageDto;
@@ -29,6 +31,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -47,6 +50,9 @@ public class AggregatorController {
 
     @Value("${services.task.url}")
     private String taskServiceUrl;
+
+    @Value("${services.notification.url}")
+    private String notificationServiceUrl;
 
     // ====================== Page ======================
     @GetMapping("/spaces/{spaceId}")
@@ -812,7 +818,7 @@ public ResponseEntity<Void> deleteSpace(
     }
 
     @PostMapping("/auth/refresh")
-    public ResponseEntity<TokenResponse> refresh(@RequestHeader("X-Refresh-Token") String refreshToken) {
+    public ResponseEntity<AuthResponse> refresh(@RequestHeader("X-Refresh-Token") String refreshToken) {
         String url = accountServiceUrl + "/internal/users/auth/refresh";
 
         HttpHeaders headers = new HttpHeaders();
@@ -820,8 +826,8 @@ public ResponseEntity<Void> deleteSpace(
 
         HttpEntity<Void> entity = new HttpEntity<>(headers);
 
-        ResponseEntity<TokenResponse> response = restTemplate.exchange(
-                url, HttpMethod.POST, entity, TokenResponse.class);
+        ResponseEntity<AuthResponse> response = restTemplate.exchange(
+                url, HttpMethod.POST, entity, AuthResponse.class);
 
         return ResponseEntity.status(response.getStatusCode()).body(response.getBody());
     }
@@ -1838,6 +1844,82 @@ public ResponseEntity<Void> deleteSpace(
             e.printStackTrace();
             return ResponseEntity.internalServerError().body("Internal error");
         }
+    }
+
+    // ====================== Notifications ======================
+
+    @GetMapping("/spaces/{spaceId}/notifications")
+    public ResponseEntity<List<NotificationDto>> getNotificationsForSpace(
+            @PathVariable Long spaceId,
+            @AuthenticationPrincipal Jwt jwt) {
+
+        if (jwt == null) return ResponseEntity.status(401).build();
+
+        Long userId = Long.valueOf(jwt.getSubject());
+
+        // 1. Получаем уведомления из notification-service
+        String url = notificationServiceUrl + "/internal/notifications/spaces/" + spaceId + "/users/" + userId;
+        ResponseEntity<List<NotificationDto>> response = restTemplate.exchange(
+                url, HttpMethod.GET, null,
+                new ParameterizedTypeReference<List<NotificationDto>>() {}
+        );
+        List<NotificationDto> notifications = response.getBody();
+        if (notifications == null || notifications.isEmpty()) {
+            return ResponseEntity.ok(Collections.emptyList());
+        }
+
+        // 2. Получаем название пространства из board-service
+        String spaceName = "";
+        try {
+            SpaceDto space = getCurrentSpaceInfo(spaceId);
+            if (space != null) spaceName = space.getSpaceName();
+        } catch (Exception ignored) {}
+
+        // 3. Собираем уникальные actorUserId и batch-запрашиваем никнеймы из account-service
+        List<Long> actorIds = notifications.stream()
+                .map(NotificationDto::getActorUserId)
+                .filter(Objects::nonNull)
+                .distinct()
+                .collect(Collectors.toList());
+
+        Map<Long, String> nicknameMap = new HashMap<>();
+        if (!actorIds.isEmpty()) {
+            try {
+                List<UserInfoDto> users = getUsersByIds(actorIds).getBody();
+                if (users != null) {
+                    users.forEach(u -> nicknameMap.put(u.getUserId(), u.getNickname()));
+                }
+            } catch (Exception ignored) {}
+        }
+
+        // 4. Обогащаем каждое уведомление
+        String finalSpaceName = spaceName;
+        notifications.forEach(n -> {
+            n.setSpaceName(finalSpaceName);
+            String nickname = nicknameMap.getOrDefault(n.getActorUserId(), "Пользователь");
+            n.setActorUserNickname(nickname);
+            n.setMessage(String.format(
+                    "Пользователь \"%s\" был добавлен в пространство \"%s\"",
+                    nickname, finalSpaceName));
+        });
+
+        return ResponseEntity.ok(notifications);
+    }
+
+    @PutMapping("/spaces/{spaceId}/notifications/mark-read")
+    public ResponseEntity<Void> markNotificationsAsRead(
+            @PathVariable Long spaceId,
+            @AuthenticationPrincipal Jwt jwt) {
+
+        if (jwt == null) return ResponseEntity.status(401).build();
+
+        Long userId = Long.valueOf(jwt.getSubject());
+        String url = notificationServiceUrl
+                + "/internal/notifications/spaces/" + spaceId
+                + "/users/" + userId + "/mark-read";
+
+        restTemplate.exchange(url, HttpMethod.PUT, null, Void.class);
+        return ResponseEntity.ok().build();
     }
 
 }

@@ -8,6 +8,7 @@ import InvitePage from "./pages/InvitePage";
 import ProfilePage from "./pages/ProfilePage";
 import TasksPage from "./pages/TasksPage";
 import BoardPage from "./pages/BoardPage";
+import NotificationsPage from "./pages/NotificationsPage";
 
 function App() {
     return (
@@ -19,7 +20,7 @@ function App() {
             <Route path="/boardiox/profile/:userId" element={<ProfilePage />} />
             <Route path="/boardiox/invite/:token" element={<InvitePage />} />
             <Route path="/boardiox/spaces/:spaceId/boards/:boardId/tasks" element={<TasksPage />} />
-
+            <Route path="/boardiox/spaces/:spaceId/notifications" element={<NotificationsPage />} />
         </Routes>
     );
 }

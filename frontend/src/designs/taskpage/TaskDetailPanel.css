@@ -18,7 +18,7 @@
     padding: 30px;
     width: 700px;
     max-width: 90%;
-    max-height: 90vh;
+    max-height: 95vh;
     overflow-y: auto;
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
     animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -192,7 +192,7 @@
 
 /* Комментарии */
 .comments-list {
-    max-height: 300px;
+    max-height: 200px;
     overflow-y: auto;
     margin-bottom: 15px;
 }
@@ -260,6 +260,7 @@
     width: 36px;
     height: 36px;
     border-radius: 50%;
+    overflow: hidden;
     background-color: #FF6B6B;
     display: flex;
     align-items: center;
@@ -277,25 +278,25 @@
 }
 
 
-.comment-input {
+.task-detail-panel .comment-input {
     flex: 1;
     background-color: rgba(0, 0, 0, 0.1);
     border: none;
     border-radius: 10px;
     padding: 10px 12px;
-    color: #000000;
+    color: #000000 !important;
     font-size: 14px;
     resize: none;
     outline: none;
     font-family: inherit;
 }
 
-.comment-input::placeholder {
-    color: #666;
+.task-detail-panel .comment-input::placeholder {
+    color: #000000 !important;
 }
 
-.comment-input:focus {
-    background-color: rgba(0, 0, 0, 0.15);
+.task-detail-panel .comment-input:focus {
+    /*background-color: rgba(0, 0, 0, 0.15);*/
 }
 
 /* Кнопки */
@@ -481,7 +482,7 @@
 }
 
 .comment-input::placeholder {
-    color: #666;
+    color: #000000;
 }
 
 .comment-input:focus {
@@ -579,7 +580,7 @@
 
 /* Список комментариев */
 .comments-list {
-    max-height: 300px;
+    max-height: 200px;
     overflow-y: auto;
     margin-bottom: 15px;
 }

@@ -1,182 +1,226 @@
-/* 1. Сбрасываем отступы по умолчанию у браузера */
-body, html {
+/* ===== Базовый сброс ===== */
+*, *::before, *::after {
+    box-sizing: border-box;
     margin: 0;
     padding: 0;
-    height: 100%; /* Важно для некоторых браузеров */
+}
+
+body, html {
+    height: 100%;
     background-color: #5171B5;
 }
 
-.sign-in-and-sign-up-text {
-    margin-left: 300px;
-    font-size: 80px;
-    color: white;
+/* ===== Контейнер страницы — фон с клеточками ===== */
+.auth-container {
+    position: relative;
+    min-height: 100vh;
+    background-color: #5171B5;
+    background-image:
+        linear-gradient(rgba(255,255,255,0.12) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.12) 1px, transparent 1px);
+    background-size: 44px 44px;
+    overflow: hidden;
 }
 
-.sign-in-text {
-    position: absolute;
-    top: 40px;
+/* ===== Вкладки Вход / Регистрация ===== */
+.auth-tabs {
+    position: relative;
+    display: flex;
+    gap: 60px;
+    padding: 40px 0 0 80px;
 }
 
-
-.sign-up-text {
-    position: absolute;
-    top: 40px;
-    left: 600px;
+.auth-tab {
+    font-size: 64px;
+    color: rgba(255, 255, 255, 0.55);
+    cursor: pointer;
+    user-select: none;
+    transition: color 0.2s;
+    white-space: nowrap;
 }
 
-.boardiox-text {
-    font-size: 100px;
-    position: absolute;
-    right: 100px;
-    top: 50px;
-}
-
-.tab.active {
+.auth-tab.active {
     color: #ffffff;
 }
 
-/** Полоска подчеркивания */
-.underline {
-    position: relative;
-    display: flex;
-    top: 160px;
+.auth-tab:hover {
+    color: rgba(255,255,255,0.85);
+}
+
+/* Анимированная полоска под активной вкладкой */
+.auth-underline {
+    position: absolute;
+    bottom: -6px;
     height: 4px;
     background-color: #7dd3c0;
     border-radius: 2px;
-    transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    left: 303px;
+    transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+                width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/*Форма для регистрации*/
-.register-form-container {
+/* ===== Логотип — стикер ===== */
+.boardiox-sticky {
     position: absolute;
-    left: 400px;
-    top: 250px;
+    top: 50px;
+    right: 120px;
+    background-color: #f5e6a3;
+    color: #1a1a1a;
+    padding: 12px 28px;
+    border: 2px solid rgba(0, 0, 0, 0.18);
+    border-radius: 6px;
+    box-shadow: 3px 4px 0 rgba(0,0,0,0.15);
+    line-height: 1.7;
+}
 
+/* Только текст переворачивается зеркально */
+.boardiox-sticky-text {
+    position: relative;
+    display: inline-block;
+    font-size: 76px;
+    font-weight: 700;
+    transform: rotate(-10deg);
+    bottom: 8px;
+}
+
+/* ===== Формы ===== */
+.auth-form {
+    position: absolute;
+    left: 80px;
+    top: 220px;
+}
+
+/* Форма входа */
+.auth-form--login {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    width: 420px;
+}
+
+/* Форма регистрации */
+.auth-form--register {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.auth-form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    column-gap: 80px;
+    row-gap: 14px;
+}
+
+/* ===== Поле ввода ===== */
+.auth-input {
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid rgba(255, 255, 255, 0.65);
+    color: #ffffff;
     font-size: 30px;
-    background-color: transparent;
-    border: transparent;
-    max-width: 1200px;
-    max-height: 1200px;
+    width: 100%;
+    padding: 8px 0;
+    outline: none;
+    transition: border-bottom-color 0.2s;
+}
+
+.auth-input::placeholder {
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 30px;
+}
+
+.auth-input:focus {
+    border-bottom-color: #ffffff;
+}
+
+.auth-input:-webkit-autofill,
+.auth-input:-webkit-autofill:hover,
+.auth-input:-webkit-autofill:focus {
+    -webkit-box-shadow: 0 0 0 1000px transparent inset;
+    -webkit-text-fill-color: #ffffff;
+    caret-color: #ffffff;
+    border-bottom: 2px solid rgba(255, 255, 255, 0.65);
+    transition: background-color 5000s ease-in-out 0s;
+}
+
+/* ===== Кнопка ===== */
+.auth-button {
+    align-self: flex-start;
+    margin-top: 24px;
+    background-color: #2D2D30;
+    color: #ffffff;
+    font-size: 26px;
+    padding: 12px 30px;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    outline: none;
+    transition: opacity 0.2s;
+}
+
+.auth-button:hover {
+    opacity: 0.85;
+}
+
+.auth-button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* ===== Ошибка ===== */
+.auth-error {
+    color: #ffcdd2;
+    font-size: 20px;
+    margin-top: 4px;
+}
+
+/* ===== Декоративные элементы на доске ===== */
+.auth-board-deco {
+    position: absolute;
+    bottom: 36px;
+    left: 60px;
+    width: 500px;
+    height: 150px;
+}
+
+.auth-deco-arrows {
+    position: absolute;
+    top: 0;
+    left: 0;
     width: 100%;
     height: 100%;
-
-    padding: 0 40px;
-    box-sizing: border-box;
+    pointer-events: none;
+    overflow: visible;
 }
 
-/*Форма для входа*/
-.sign-in-form-container {
+.deco-card {
     position: absolute;
-    left: 300px;
-    top: 250px;
-
-    font-size: 30px;
-    background-color: transparent;
-    border: transparent;
-    max-width: 500px;
-    max-height: 1200px;
-    width: 100%;
-    height: 100%;
-
-    padding: 0 40px;
-    box-sizing: border-box;
-}
-
-.nickname-email-texts-row {
-
-}
-
-.registration-form .input {
-    background-color: transparent;
-    border: 1px solid #ccc;
-}
-
-.submit-button-sign-up {
-    position: absolute;
-    top: 250px;
-    left: -105px;
-    background-color: #2D2D30;
+    font-size: 17px;
+    font-weight: 600;
+    color: #1a1a1a;
+    padding: 9px 20px;
     border-radius: 10px;
-    border: none;              /* Убирает рамку */
-    outline: none;             /* Убирает синюю/черную обводку при клике */
-    box-shadow: none;          /* Убирает тень, если она есть */
-    color: #FFFFFF;
-    padding: 10px 20px; /*  сверху/снизу, слева/справа */
+    box-shadow: 2px 3px 0 rgba(0,0,0,0.18);
+    white-space: nowrap;
 }
 
-.submit-button-sign-in {
-    position: absolute;
-    background-color: #2D2D30;
-    border-radius: 10px;
-    border: none;              /* Убирает рамку */
-    outline: none;             /* Убирает синюю/черную обводку при клике */
-    box-shadow: none;          /* Убирает тень, если она есть */
-    color: #FFFFFF;
-    padding: 10px 20px; /*  сверху/снизу, слева/справа */
-    top: 150px;
+/* Придумывай — нижний левый */
+.deco-card--yellow {
+    background-color: #f5c842;
+    left: 0;
+    bottom: 0;
 }
 
-.nickname-email-texts-row {
-
+/* Реализуй — центр, выше */
+.deco-card--orange {
+    background-color: #e8933a;
+    left: 190px;
+    bottom: 72px;
 }
 
-.nickname-input {
-
-}
-
-.nickname-field {
-    position: absolute;
-    left: -100px;
-}
-
-.email-field {
-    position: absolute;
-    left: 300px;
-}
-
-.passwords-row {
-
-}
-
-.password-field {
-    position: absolute;
-    top: 100px;
-    left: -100px;
-}
-
-.confirm-password-field {
-    position: absolute;
-    top: 100px;
-    left: 300px;
-}
-
-/* Стили для полей ввода */
-.styled-input {
-    background: transparent; /* Прозрачный фон */
-    border: none;            /* Убираем рамку */
-    border-bottom: 1px solid rgba(255, 255, 255, 0.6); /* Только нижняя линия */
-    padding: 25px -10px; /* px сверху и снизу делают поле выше. */
-
-
-    color: #000000;
-    font-size: 30px;         /* Размер шрифта */
-    width: 100%;             /* На всю ширину */
-    outline: none;           /* Убираем синюю обводку при клике */
-}
-
-/* Стили для текста-подсказки (placeholder) */
-.styled-input::placeholder {
-    color: #FFFFFF;
-    font-size: 30px;                 /* Такой же размер, как у основного текста */
-}
-
-/* Эффект при фокусе (клике на поле) */
-.styled-input:focus {
-    border-bottom-color: #ffffff; /* Линия становится ярко-белой */
-}
-
-/* Опционально: можно сделать плейсхолдер чуть прозрачнее при фокусе */
-.styled-input:focus::placeholder {
-    opacity: 1;
+/* Проектируй — нижний правый */
+.deco-card--blue {
+    background-color: #82c8d5;
+    left: 366px;
+    bottom: 0;
 }

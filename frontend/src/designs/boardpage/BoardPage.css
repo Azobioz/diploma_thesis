@@ -134,13 +134,18 @@
 
 .board-element {
     position: absolute;
-    cursor: move;
+    cursor: default;
     transition: box-shadow 0.15s;
     z-index: 2;
+    overflow: visible;
 }
 
 .board-element:hover {
     filter: brightness(1.1);
+}
+
+.board-element.comment-board-element:hover {
+    filter: none;
 }
 
 .board-element.selected {
@@ -377,37 +382,10 @@
     border-color: #000;
 }
 
-/* Текстовое поле внутри фигуры */
-.shape-text-input {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: transparent;
-    border: none;
-    outline: none;
-    resize: none;
-    color: #000;
-    text-align: center;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 10px;
-    box-sizing: border-box;
-    overflow: hidden;
-    font-family: inherit;
-}
+/* shape-text-input первое определение удалено, стили перенесены ниже */
 
 
 /* Обновленные стили фигур для поддержки текста */
-.square-shape,
-.circle-shape {
-    position: relative;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
 
 .circle-shape {
     border-radius: 50%;
@@ -598,6 +576,10 @@
 
 
 .board-element:hover { filter: brightness(1.1); }
+.board-element.comment-board-element:hover {
+    filter: none;
+    z-index: 500 !important;
+}
 .board-element.selected { z-index: 10; }
 
 .element-shape { width: 100%; height: 100%; }
@@ -697,12 +679,6 @@
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
     z-index: 1000;
     pointer-events: auto;
-    animation: fadeInPanel 0.15s ease-out;
-}
-
-@keyframes fadeInPanel {
-    from { opacity: 0; transform: translateY(5px) scale(0.95); }
-    to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
 .format-btn {
@@ -773,43 +749,131 @@
     border-color: #000;
 }
 
-.shape-text-input,
-.shape-text-display {
-    position: absolute;
-
+.shape-text-display,
+.shape-text-input {
     width: 100%;
-    height: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
     padding: 10px;
     box-sizing: border-box;
-    color: #000;
     text-align: center;
     word-wrap: break-word;
-    overflow: hidden;
+    overflow-wrap: break-word;
+    color: #000;
+}
+
+.shape-text-display {
+    pointer-events: none;
 }
 
 .shape-text-input {
+    height: auto;
+    max-height: 100%;
     background: transparent;
     border: none;
     outline: none;
     resize: none;
     font-family: inherit;
+    overflow-y: auto;
+    pointer-events: auto;
+    cursor: text;
+    scrollbar-width: none;
 }
 
-.shape-text-display { pointer-events: none; }
+.shape-text-input::-webkit-scrollbar {
+    display: none;
+}
 
 .square-shape,
 .circle-shape {
     position: relative;
+    width: 100%;
+    height: 100%;
     display: flex;
     align-items: center;
     justify-content: center;
+    overflow: hidden;
+    box-sizing: border-box;
 }
 
 .circle-shape { border-radius: 50%; }
 .square-shape { border-radius: 8px; }
+
+/* === TABLE CREATION PANEL === */
+.table-creation-panel {
+    position: absolute;
+    left: 56px;
+    top: 0;
+    background: #64A1BA;
+    border-radius: 12px;
+    padding: 16px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    z-index: 200;
+    min-width: 240px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+}
+
+.table-panel-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    color: #fff;
+    font-size: 14px;
+}
+
+.table-panel-input {
+    width: 70px;
+    padding: 4px 0;
+    border: none;
+    border-bottom: 2px solid #fff;
+    background: transparent;
+    color: #fff;
+    font-size: 14px;
+    text-align: center;
+    outline: none;
+}
+
+.table-panel-input::-webkit-inner-spin-button,
+.table-panel-input::-webkit-outer-spin-button { display: none; }
+
+.table-panel-input[type=number] { -moz-appearance: textfield; }
+
+.table-panel-buttons {
+    display: flex;
+    gap: 10px;
+    justify-content: space-between;
+    margin-top: 4px;
+}
+
+.table-panel-cancel {
+    flex: 1;
+    padding: 7px 0;
+    border-radius: 8px;
+    border: none;
+    background: #2D2D30;
+    color: #fff;
+    font-size: 13px;
+    cursor: pointer;
+    font-weight: 500;
+}
+
+.table-panel-cancel:hover { background: #57575D; }
+
+.table-panel-confirm {
+    flex: 1;
+    padding: 7px 0;
+    border-radius: 8px;
+    border: none;
+    background: #2D2D30;
+    color: #fff;
+    font-size: 13px;
+    cursor: pointer;
+    font-weight: 600;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+}
+
+.table-panel-confirm:hover { background: #57575D; }
 
 /* === DRAWING PANEL STYLES === */
 .drawing-panel {
@@ -844,6 +908,16 @@
     justify-content: center;
     transition: all 0.2s ease;
     color: #000;
+    font-size: 22px;
+}
+
+.drawing-tool-btn i {
+    font-size: 22px;
+}
+
+.drawing-tool-btn svg {
+    width: 24px;
+    height: 24px;
 }
 
 .drawing-tool-btn:hover {
@@ -922,22 +996,20 @@
 .comment-element {
     position: relative;
     cursor: pointer;
-    transition: transform 0.2s ease;
     z-index: 2;
 }
 
 .comment-element.expanded {
     z-index: 1000 !important;
-    transition: none;
 }
 
 .comment-element:hover {
-    transform: scale(1.05);
+    transform: none;
 }
 
 /* Comment that cannot be moved by current user */
 .comment-element.owned-by-other {
-    cursor: default;
+    cursor: pointer;
 }
 
 .comment-element.owned-by-other:hover {
@@ -945,17 +1017,15 @@
 }
 
 .comment-input-popup {
-    background: rgba(100, 161, 186, 0.95);
-    border-radius: 16px;
-    padding: 12px 16px;
+    background: transparent;
+    border-radius: 0;
+    padding: 0;
     display: flex;
     align-items: center;
-    gap: 10px;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-    backdrop-filter: blur(10px);
+    gap: 0;
+    box-shadow: none;
+    backdrop-filter: none;
     animation: fadeInComment 0.2s ease-out;
-    min-width: 300px;
-    max-width: 500px;
 }
 
 @keyframes fadeInComment {
@@ -1008,8 +1078,13 @@
     transform: scale(1.1);
 }
 
+.board-canvas.pencil-mode,
+.board-canvas.pencil-mode * {
+    cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Cpath d='M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z' fill='%23333333'/%3E%3C/svg%3E") 0 24, crosshair !important;
+}
+
 .board-canvas.comment-mode {
-    cursor: crosshair;
+    cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 24 24'%3E%3Crect x='2' y='3' width='20' height='15' rx='2' fill='%23ffffff' stroke='%23333333' stroke-width='1.5'/%3E%3Cpath d='M8 20l4-5h8' fill='%23ffffff' stroke='%23333333' stroke-width='1.5' stroke-linejoin='round'/%3E%3C/svg%3E") 4 4, crosshair;
 }
 
 /* Collapsed state - just avatar */
@@ -1032,9 +1107,9 @@
     z-index: auto;
 }
 
-/* Hide collapsed avatar when expanded */
+/* Keep avatar visible when expanded */
 .comment-element.expanded .comment-avatar-collapsed {
-    display: none !important;
+    display: flex;
 }
 
 .comment-avatar-collapsed img {
@@ -1042,6 +1117,9 @@
     height: 100%;
     object-fit: cover;
     border-radius: 50%;
+    user-select: none;
+    -webkit-user-drag: none;
+    pointer-events: none;
 }
 
 .comment-avatar-collapsed span {
@@ -1079,6 +1157,14 @@
 }
 
 .comment-element.expanded .comment-hover-preview {
+    display: none;
+}
+
+.comment-element.is-dragging .comment-hover-preview {
+    display: none;
+}
+
+.comment-element.is-dragging .comment-thread-expanded {
     display: none;
 }
 
@@ -1205,6 +1291,9 @@
 
 .comment-thread-content {
     flex: 1;
+    min-width: 0;
+    overflow-wrap: break-word;
+    word-break: break-word;
 }
 
 .comment-thread-user-row {
@@ -1230,6 +1319,8 @@
     font-size: 14px;
     line-height: 1.5;
     word-wrap: break-word;
+    overflow-wrap: break-word;
+    word-break: break-word;
 }
 
 /* Reply section */
@@ -1323,11 +1414,10 @@
     background: #4A90E2;
     padding: 12px 16px;
     border-radius: 24px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    box-shadow: none;
 }
 
 .comment-input {
-    background: transparent;
     border: none;
     color: #ffffff;
     font-size: 16px;
@@ -1337,6 +1427,15 @@
 
 .comment-input::placeholder {
     color: rgba(255, 255, 255, 0.7);
+}
+
+.text-element-input::placeholder {
+    color: #000000;
+    opacity: 1;
+}
+
+.text-element-input::selection {
+    background: transparent;
 }
 
 .comment-send-btn {

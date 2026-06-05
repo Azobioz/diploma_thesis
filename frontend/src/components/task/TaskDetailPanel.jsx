@@ -63,8 +63,7 @@ const TaskDetailPanel = ({
         }
     }, [isOpen]);
 
-    if (!isOpen) return null;
-    if (!task) return <div className="loading-panel">Загрузка задачи...</div>;
+    if (!isOpen || !task) return null;
 
     const handleFileDownload = (file) => {
         if (!file.fileData) return;

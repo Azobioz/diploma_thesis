@@ -319,7 +319,6 @@ const ProfilePage = () => {
                             {avatarPreviewUrl && (
                                 <img src={avatarPreviewUrl} alt="Preview" />
                             )}
-                            <span>Новое изображение</span>
                         </div>
                         <div className="avatar-preview-buttons">
                             <button className="btn-cancel" onClick={handleAvatarCancel}>

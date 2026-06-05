@@ -21,8 +21,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         // Все internal эндпоинты разрешаем, потому-что проверка будет в aggregator-service
                         .anyRequest().permitAll()
-                )
-                .oauth2ResourceServer(oauth2 -> oauth2.disable());
+                );
 
         return http.build();
     }

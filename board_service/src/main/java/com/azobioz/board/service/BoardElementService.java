@@ -113,6 +113,8 @@ public class BoardElementService {
         arrowElement.setStartY(request.startY());
         arrowElement.setEndX(request.endX());
         arrowElement.setEndY(request.endY());
+        arrowElement.setArrowType(request.arrowType() != null ? request.arrowType() : "SINGLE");
+        arrowElement.setStrokeStyle(request.strokeStyle() != null ? request.strokeStyle() : "solid");
         arrowElement.setBoardElement(boardElement);
 
         // Связываем обратно (двунаправленная связь)
@@ -126,6 +128,8 @@ public class BoardElementService {
         arrowData.put("startY", arrowElement.getStartY());
         arrowData.put("endX",   arrowElement.getEndX());
         arrowData.put("endY",   arrowElement.getEndY());
+        arrowData.put("arrowType", arrowElement.getArrowType() != null ? arrowElement.getArrowType() : "SINGLE");
+        arrowData.put("strokeStyle", arrowElement.getStrokeStyle() != null ? arrowElement.getStrokeStyle() : "solid");
 
         // Возвращаем DTO в едином формате
         return new BoardElementDto(
@@ -589,6 +593,8 @@ public class BoardElementService {
         if (request.startY() != null) arrowElement.setStartY(request.startY());
         if (request.endX() != null) arrowElement.setEndX(request.endX());
         if (request.endY() != null) arrowElement.setEndY(request.endY());
+        if (request.arrowType() != null) arrowElement.setArrowType(request.arrowType());
+        if (request.strokeStyle() != null) arrowElement.setStrokeStyle(request.strokeStyle());
 
         boardElementRepository.save(boardElement);
 
@@ -598,6 +604,8 @@ public class BoardElementService {
         arrowData.put("startY", arrowElement.getStartY());
         arrowData.put("endX", arrowElement.getEndX());
         arrowData.put("endY", arrowElement.getEndY());
+        arrowData.put("arrowType", arrowElement.getArrowType() != null ? arrowElement.getArrowType() : "SINGLE");
+        arrowData.put("strokeStyle", arrowElement.getStrokeStyle() != null ? arrowElement.getStrokeStyle() : "solid");
 
         return new BoardElementDto(
                 boardElement.getId(),
@@ -790,20 +798,22 @@ public class BoardElementService {
         // Если ячейка существует - обновляем, иначе создаём новую
         if (tableCell != null) {
             tableCell.setContent(request.content());
-            // Сохраняем через tableCellRepository (если есть) или через tableElement
+            if (request.fontSize() != null) tableCell.setFontSize(request.fontSize());
+            if (request.fontFamily() != null) tableCell.setFontFamily(request.fontFamily());
+            if (request.isBold() != null) tableCell.setIsBold(request.isBold());
+            if (request.isUnderline() != null) tableCell.setIsUnderline(request.isUnderline());
             tableCell = tableCellRepository.save(tableCell);
         } else {
-            // Создаём новую ячейку (на случай, если она не была создана при создании таблицы)
             tableCell = new TableCell();
             tableCell.setRow(request.row());
             tableCell.setCol(request.col());
             tableCell.setContent(request.content());
+            if (request.fontSize() != null) tableCell.setFontSize(request.fontSize());
+            if (request.fontFamily() != null) tableCell.setFontFamily(request.fontFamily());
+            if (request.isBold() != null) tableCell.setIsBold(request.isBold());
+            if (request.isUnderline() != null) tableCell.setIsUnderline(request.isUnderline());
             tableCell.setTableElement(tableElement);
-
-            // Добавляем в список ячеек таблицы
             tableElement.getTableCells().add(tableCell);
-
-            // Сохраняем
             tableCell = tableCellRepository.save(tableCell);
         }
 
@@ -811,7 +821,11 @@ public class BoardElementService {
                 tableCell.getId(),
                 tableCell.getRow(),
                 tableCell.getCol(),
-                tableCell.getContent()
+                tableCell.getContent(),
+                tableCell.getFontSize(),
+                tableCell.getFontFamily(),
+                tableCell.getIsBold(),
+                tableCell.getIsUnderline()
         );
     }
 
@@ -888,8 +902,23 @@ public class BoardElementService {
                     if (replyData.containsKey("message")) {
                         reply.setMessage((String) replyData.get("message"));
                     }
-                    if (replyData.containsKey("createdAt")) {
-                        reply.setCreatedAt(Instant.parse((String) replyData.get("createdAt")).atZone(ZoneOffset.UTC).toLocalDateTime());
+                    if (replyData.containsKey("createdAt") && replyData.get("createdAt") != null) {
+                        Object createdAtVal = replyData.get("createdAt");
+                        if (createdAtVal instanceof String createdAtStr && !createdAtStr.isEmpty()) {
+                            try {
+                                // ISO with Z suffix: "2026-06-01T22:18:30.578Z"
+                                reply.setCreatedAt(Instant.parse(createdAtStr).atZone(ZoneOffset.UTC).toLocalDateTime());
+                            } catch (Exception e1) {
+                                try {
+                                    // ISO without Z: "2026-06-01T22:18:30.578"
+                                    reply.setCreatedAt(LocalDateTime.parse(createdAtStr));
+                                } catch (Exception e2) {
+                                    reply.setCreatedAt(LocalDateTime.now());
+                                }
+                            }
+                        } else {
+                            reply.setCreatedAt(LocalDateTime.now());
+                        }
                     }
                     
                     currentReplies.add(reply);
@@ -950,7 +979,11 @@ public class BoardElementService {
                         cell.getId(),
                         cell.getRow(),
                         cell.getCol(),
-                        cell.getContent() != null ? cell.getContent() : ""
+                        cell.getContent() != null ? cell.getContent() : "",
+                        cell.getFontSize(),
+                        cell.getFontFamily(),
+                        cell.getIsBold(),
+                        cell.getIsUnderline()
                 ))
                 .toList();
 

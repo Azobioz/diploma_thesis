@@ -25,6 +25,12 @@ public class ArrowElement {
     @Column(name = "end_y")
     private int endY;
 
+    @Column(name = "arrow_type")
+    private String arrowType; // SINGLE, DOUBLE, LINE
+
+    @Column(name = "stroke_style")
+    private String strokeStyle; // solid, dashed, dotted
+
     @OneToOne
     @JoinColumn(name = "board_element_id")
     private BoardElement boardElement;

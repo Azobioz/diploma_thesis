@@ -2,12 +2,16 @@ package com.azobioz.account.model;
 
 
 import jakarta.persistence.*;
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.ToString;
 
 import java.time.LocalDateTime;
 
 @Entity
-@Data
+@Getter
+@Setter
+@ToString(exclude = "user")
 @Table(name = "refresh_token")
 public class RefreshToken {
 

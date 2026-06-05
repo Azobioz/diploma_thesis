@@ -108,3 +108,54 @@
 .panel-content::-webkit-scrollbar-track {
     background: rgba(255, 255, 255, 0.05);
 }
+
+/* Элемент уведомления в панели */
+.panel-notification-item {
+    position: relative;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 12px 0;
+}
+
+.panel-notification-icon {
+    font-size: 20px;
+    color: #ffffff;
+    flex-shrink: 0;
+    width: 24px;
+    text-align: center;
+    padding-top: 2px;
+}
+
+.panel-notification-message {
+    flex: 1;
+    font-size: 14px;
+    color: #ffffff;
+    line-height: 1.4;
+}
+
+.panel-notification-divider {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    border-radius: 1px;
+}
+
+/* Непрочитанное — красная */
+.panel-notification-divider--unread {
+    background: linear-gradient(to right, #e05c6e, transparent);
+}
+
+/* Прочитанное — #82D2F3 */
+.panel-notification-divider--read {
+    background: linear-gradient(to right, #82D2F3, transparent);
+}
+
+.panel-notifications-empty {
+    color: rgba(255,255,255,0.5);
+    font-size: 14px;
+    text-align: center;
+    padding: 30px 0;
+}

@@ -1,17 +1,16 @@
 import React, { useState, useEffect, useRef } from 'react';
+import '../../designs/taskpage/CreateTaskPanel.css';
 
 const CreateTaskPanel = ({ isOpen, onClose, onSubmit, taskListId }) => {
     const [taskName, setTaskName] = useState('');
     const [taskDescription, setTaskDescription] = useState('');
-    const [deadlineDate, setDeadlineDate] = useState('');
-    const [deadlineTime, setDeadlineTime] = useState('');
+    const [deadline, setDeadline] = useState('');
     const [files, setFiles] = useState([]);
     const [error, setError] = useState('');
     const panelRef = useRef(null);
     const fileInputRef = useRef(null);
     const nameInputRef = useRef(null);
 
-    // Закрытие при клике вне панели
     useEffect(() => {
         const handleClickOutside = (event) => {
             if (panelRef.current && !panelRef.current.contains(event.target)) {
@@ -25,13 +24,11 @@ const CreateTaskPanel = ({ isOpen, onClose, onSubmit, taskListId }) => {
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, [isOpen]);
 
-    // Сброс при открытии/закрытии
     useEffect(() => {
         if (isOpen) {
             setTaskName('');
             setTaskDescription('');
-            setDeadlineDate('');
-            setDeadlineTime('')
+            setDeadline('');
             setFiles([]);
             setError('');
         }
@@ -40,29 +37,15 @@ const CreateTaskPanel = ({ isOpen, onClose, onSubmit, taskListId }) => {
     const handleClose = () => {
         setTaskName('');
         setTaskDescription('');
-        setDeadlineDate('');
-        setDeadlineTime('')
+        setDeadline('');
         setFiles([]);
         setError('');
         onClose();
     };
 
-    const handleDateChange = (date, time) => {
-        setDeadlineDate(date);
-        setDeadlineTime(time);
-    };
-
-    const getDeadlineDateTime = () => {
-        if (!deadlineDate) return null;
-
-        const timeStr = deadlineTime || '00:00';
-        return `${deadlineDate}T${timeStr}:00`;
-    };
-
     const handleFileSelect = (e) => {
         const newFiles = Array.from(e.target.files);
         setFiles(prev => [...prev, ...newFiles]);
-        // Сбрасываем value чтобы можно было выбрать тот же файл повторно
         e.target.value = '';
     };
 
@@ -75,14 +58,12 @@ const CreateTaskPanel = ({ isOpen, onClose, onSubmit, taskListId }) => {
             setError('Введите название задачи');
             return;
         }
-
         onSubmit({
             taskName: taskName.trim(),
             taskDescription: taskDescription.trim(),
-            deadline: getDeadlineDateTime(),
-            files: files
+            deadline: deadline ? `${deadline}:00` : null,
+            files
         });
-
         handleClose();
     };
 
@@ -99,114 +80,68 @@ const CreateTaskPanel = ({ isOpen, onClose, onSubmit, taskListId }) => {
 
     return (
         <div className="create-task-overlay">
-            <div className="create-task-panel" ref={panelRef}>
-                <div className="create-task-header">
-                    <h3>Создание задачи</h3>
+            <div className="create-task-panel" ref={panelRef} onKeyDown={handleKeyDown}>
+
+                {/* Поля ввода */}
+                <div className="create-task-body">
+                    <input
+                        ref={nameInputRef}
+                        type="text"
+                        className="task-input-field"
+                        value={taskName}
+                        onChange={(e) => { setTaskName(e.target.value); if (error) setError(''); }}
+                        placeholder="Название задачи"
+                        maxLength={100}
+                    />
+                    <textarea
+                        className="task-input-field task-textarea"
+                        value={taskDescription}
+                        onChange={(e) => setTaskDescription(e.target.value)}
+                        placeholder="Описание"
+                        rows={2}
+                        maxLength={500}
+                    />
+                    <input
+                        type="datetime-local"
+                        className="task-input-field task-deadline-field"
+                        value={deadline}
+                        onChange={(e) => setDeadline(e.target.value)}
+                        placeholder="Дедлайн"
+                    />
                 </div>
 
-                <div className="create-task-body" onKeyDown={handleKeyDown}>
-                    {/* Название задачи */}
-                    <div className="task-input-group">
-                        <label className="task-input-label">Название задачи</label>
-                        <input
-                            ref={nameInputRef}
-                            type="text"
-                            className="task-input-field"
-                            value={taskName}
-                            onChange={(e) => {
-                                setTaskName(e.target.value);
-                                if (error) setError('');
-                            }}
-                            placeholder="Введите название"
-                            maxLength={100}
-                        />
-                    </div>
-
-                    {/* Описание */}
-                    <div className="task-input-group">
-                        <label className="task-input-label">Описание</label>
-                        <textarea
-                            className="task-input-field task-textarea"
-                            value={taskDescription}
-                            onChange={(e) => setTaskDescription(e.target.value)}
-                            placeholder="Введите описание задачи"
-                            rows={3}
-                            maxLength={500}
-                        />
-                    </div>
-
-                    {/* Дедлайн */}
-                    <div className="task-input-group">
-                        <label className="task-input-label">Дедлайн</label>
-                        <div className="datetime-inputs">
-                            <input
-                                type="date"
-                                className="task-input-field task-date"
-                                value={deadlineDate}
-                                onChange={(e) => handleDateChange(e.target.value, deadlineTime)}
-                                placeholder="Дата"
-                            />
-                            <input
-                                type="time"
-                                className="task-input-field task-time"
-                                value={deadlineTime}
-                                onChange={(e) => handleDateChange(deadlineDate, e.target.value)}
-                                placeholder="Время"
-                            />
-                        </div>
-                    </div>
-
-                    {/* Прикрепленные файлы */}
-                    {files.length > 0 && (
-                        <div className="task-files-list">
-                            {files.map((file, index) => (
-                                <div key={index} className="task-file-item">
-                                    <div className="task-file-info">
-                                        <i className="bi bi-file-earmark"></i>
-                                        <span className="task-file-name">{file.name}</span>
-                                    </div>
-                                    <button
-                                        className="task-file-remove"
-                                        onClick={() => handleRemoveFile(index)}
-                                        title="Удалить файл"
-                                    >
-                                        <i className="bi bi-x-lg"></i>
-                                    </button>
+                {/* Прикреплённые файлы */}
+                {files.length > 0 && (
+                    <div className="task-files-list">
+                        {files.map((file, index) => (
+                            <div key={index} className="task-file-item">
+                                <div className="task-file-info">
+                                    <i className="bi bi-file-earmark"></i>
+                                    <span className="task-file-name">{file.name}</span>
                                 </div>
-                            ))}
-                        </div>
-                    )}
-
-                    {/* Кнопка прикрепления файла */}
-                    <div className="task-file-upload">
-                        <input
-                            ref={fileInputRef}
-                            type="file"
-                            multiple
-                            onChange={handleFileSelect}
-                            style={{ display: 'none' }}
-                        />
-                        <button
-                            className="task-file-btn"
-                            onClick={() => fileInputRef.current?.click()}
-                        >
-                            <i className="bi bi-paperclip"></i>
-                            Прикрепить файл...
-                        </button>
+                                <button className="task-file-remove" onClick={() => handleRemoveFile(index)}>
+                                    <i className="bi bi-x-lg"></i>
+                                </button>
+                            </div>
+                        ))}
                     </div>
+                )}
 
-                    {error && (
-                        <div className="task-error-message">{error}</div>
-                    )}
+                {/* Кнопка прикрепления */}
+                <div className="task-file-upload">
+                    <input ref={fileInputRef} type="file" multiple onChange={handleFileSelect} style={{ display: 'none' }} />
+                    <button className="task-file-btn" onClick={() => fileInputRef.current?.click()}>
+                        <i className="bi bi-download"></i>
+                        Прикрепить файл...
+                    </button>
                 </div>
 
+                {error && <div className="task-error-message">{error}</div>}
+
+                {/* Кнопки */}
                 <div className="create-task-buttons">
-                    <button className="task-btn-cancel" onClick={handleClose}>
-                        Отмена
-                    </button>
-                    <button className="task-btn-confirm" onClick={handleSubmit}>
-                        Подтвердить
-                    </button>
+                    <button className="task-btn-cancel" onClick={handleClose}>Отмена</button>
+                    <button className="task-btn-confirm" onClick={handleSubmit}>Подтвердить</button>
                 </div>
             </div>
         </div>
